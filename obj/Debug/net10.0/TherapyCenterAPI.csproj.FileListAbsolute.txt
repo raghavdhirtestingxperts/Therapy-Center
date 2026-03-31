@@ -158,3 +158,4 @@ C:\Users\Testing\Desktop\TherapyCenterAPI\obj\Debug\net10.0\TherapyCenterAPI.pdb
 C:\Users\Testing\Desktop\TherapyCenterAPI\obj\Debug\net10.0\TherapyCenterAPI.genruntimeconfig.cache
 C:\Users\Testing\Desktop\TherapyCenterAPI\obj\Debug\net10.0\ref\TherapyCenterAPI.dll
 C:\Users\Testing\Desktop\TherapyCenterAPI\bin\Debug\net10.0\client\package-lock.json
+C:\Users\Testing\Desktop\TherapyCenterAPI\obj\Debug\net10.0\TherapyCenterAPI.sourcelink.json

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TherapyCenterAPI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5071e8a5aeb3ee08f4a964895d3ea03a06e8219d")]
 [assembly: System.Reflection.AssemblyProductAttribute("TherapyCenterAPI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TherapyCenterAPI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
