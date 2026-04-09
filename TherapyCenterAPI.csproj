@@ -20,4 +20,11 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="TherapyCenterAPI.Tests\**" />
+    <Content Remove="TherapyCenterAPI.Tests\**" />
+    <EmbeddedResource Remove="TherapyCenterAPI.Tests\**" />
+    <None Remove="TherapyCenterAPI.Tests\**" />
+  </ItemGroup>
+
 </Project>

@@ -3166,11 +3166,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Testing\\Desktop\\TherapyCenterAPI\\TherapyCenterAPI.csproj",
+      "projectUniqueName": "C:\\Users\\Testing\\Desktop\\Therapy-Center\\TherapyCenterAPI.csproj",
       "projectName": "TherapyCenterAPI",
-      "projectPath": "C:\\Users\\Testing\\Desktop\\TherapyCenterAPI\\TherapyCenterAPI.csproj",
+      "projectPath": "C:\\Users\\Testing\\Desktop\\Therapy-Center\\TherapyCenterAPI.csproj",
       "packagesPath": "C:\\Users\\Testing\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Testing\\Desktop\\TherapyCenterAPI\\obj\\",
+      "outputPath": "C:\\Users\\Testing\\Desktop\\Therapy-Center\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
