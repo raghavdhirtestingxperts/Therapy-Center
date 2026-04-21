@@ -1,43 +1,27 @@
 import { useEffect, useState } from 'react';
 import { LocalHospital as LocalHospitalIcon, CalendarMonth as CalendarIcon } from '@mui/icons-material';
-
-interface Appointment {
-  appointmentId: number;
-  patientId: number;
-  therapyId: number;
-  appointmentDate: string;
-  startTime: string;
-  endTime: string;
-  status: string;
-  patient: { firstName: string; lastName: string };
-  therapy: { name: string };
-}
+import { useAuth } from '../contexts/AuthContext';
 
 const DoctorDashboard = () => {
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const { user } = useAuth();
+  const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
-        const userStr = localStorage.getItem('user');
-        if (!userStr) throw new Error('Not logged in');
+        if (!user) throw new Error('Not logged in');
         
-        const userData = JSON.parse(userStr);
-        // Assuming the Doctor's record ID maps slightly or exactly to User ID. 
-        // Real implementation usually fetches linked doctorId. 
-        const mockDoctorId = userData.userId; 
-
-        const response = await fetch(`/api/Doctor/appointments?doctorId=${mockDoctorId}`, {
-          headers: { 'Authorization': `Bearer ${userData.token}` }
+        const response = await fetch(`/api/Doctor/appointments`, {
+          headers: { 'Authorization': `Bearer ${user.token}` }
         });
 
         if (!response.ok) throw new Error('Failed to fetch doctor appointments');
         
         const data = await response.json();
         setAppointments(data);
-      } catch (err: any) {
+      } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);

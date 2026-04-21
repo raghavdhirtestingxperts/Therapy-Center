@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Login as LoginIcon } from '@mui/icons-material';
+import { useAuth } from '../contexts/AuthContext';
 import './Auth.css';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -29,22 +31,21 @@ const Login = () => {
 
       const userData = await response.json();
       
-      // Setup active user token locally
-      localStorage.setItem('user', JSON.stringify({
+      // Setup active user token universally via Context
+      login({
         userId: userData.userId,
         email: userData.email,
         role: userData.role,
         firstName: userData.firstName,
         lastName: userData.lastName,
         token: userData.token
-      }));
+      });
       
       // Navigate dynamically based on role!
       const userRole = userData.role?.toLowerCase() || 'patient';
-      navigate(`/${userRole}`);
-      window.location.href = `/${userRole}`;
+      navigate(`/${userRole}`, { replace: true });
       
-    } catch (err: any) {
+    } catch (err) {
       console.error('Login error:', err);
       setError(err.message || 'Error occurred during login');
     } finally {

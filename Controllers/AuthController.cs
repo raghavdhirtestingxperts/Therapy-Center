@@ -88,7 +88,7 @@ namespace TherapyCenterAPI.Controllers
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("Jwt:Key").Value ?? "DefaultKey"));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {

@@ -1,28 +1,18 @@
 import { useEffect, useState } from 'react';
 import { AdminPanelSettings as AdminPanelSettingsIcon, People as PeopleIcon } from '@mui/icons-material';
-
-// Basic User Interface to type our fetched data
-interface User {
-  userId: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: string;
-}
+import { useAuth } from '../contexts/AuthContext';
 
 const AdminDashboard = () => {
-  const [users, setUsers] = useState<User[]>([]);
+  const { user } = useAuth();
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const userStr = localStorage.getItem('user');
-        if (!userStr) throw new Error('Not logged in');
-        
-        const userData = JSON.parse(userStr);
-        const token = userData.token;
+        if (!user) throw new Error('Not logged in');
+        const token = user.token;
 
         const response = await fetch('/api/Admin/users', {
           headers: {
@@ -36,7 +26,7 @@ const AdminDashboard = () => {
 
         const data = await response.json();
         setUsers(data);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Admin API error:', err);
         setError(err.message);
       } finally {

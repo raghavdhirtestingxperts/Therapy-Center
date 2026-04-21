@@ -58,12 +58,13 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// Seed database with default admin on startup
+// Seed database with dummy data on startup
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<TherapyCenterAPI.Data.ApplicationDbContext>();
     await db.Database.MigrateAsync(); // Apply pending migrations (creates DB if needed)
     
+    // Check if Admin exists first to keep original logic, but encapsulate in the Seeder concept
     if (!db.Users.Any())
     {
         db.Users.Add(new TherapyCenterAPI.Models.User
@@ -78,6 +79,9 @@ using (var scope = app.Services.CreateScope())
         });
         await db.SaveChangesAsync();
     }
+
+    // Run our robust Data Seeder
+    await TherapyCenterAPI.Data.DataSeeder.SeedDataAsync(db);
 }
 
 app.Run();

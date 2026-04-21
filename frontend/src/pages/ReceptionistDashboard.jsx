@@ -1,20 +1,15 @@
 import { useState } from 'react';
 import { SupportAgent as SupportAgentIcon, Search as SearchIcon } from '@mui/icons-material';
-
-interface Patient {
-  patientId: number;
-  firstName: string;
-  lastName: string;
-  guardianId: number | null;
-}
+import { useAuth } from '../contexts/AuthContext';
 
 const ReceptionistDashboard = () => {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [patients, setPatients] = useState<Patient[]>([]);
+  const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSearch = async (e: React.FormEvent) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
 
@@ -22,20 +17,17 @@ const ReceptionistDashboard = () => {
     setError('');
 
     try {
-      const userStr = localStorage.getItem('user');
-      if (!userStr) throw new Error('Not logged in');
-      
-      const userData = JSON.parse(userStr);
+      if (!user) throw new Error('Not logged in');
 
       const response = await fetch(`/api/Receptionist/patients/search?name=${encodeURIComponent(searchQuery)}`, {
-        headers: { 'Authorization': `Bearer ${userData.token}` }
+        headers: { 'Authorization': `Bearer ${user.token}` }
       });
 
       if (!response.ok) throw new Error('Failed to search patients');
       
       const data = await response.json();
       setPatients(data);
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using TherapyCenterAPI.Data;
 using TherapyCenterAPI.Models;
 
@@ -19,12 +20,17 @@ namespace TherapyCenterAPI.Controllers
         }
 
         [HttpGet("appointments")]
-        public async Task<ActionResult<IEnumerable<Appointment>>> GetDoctorAppointments(int doctorId)
+        public async Task<ActionResult<IEnumerable<Appointment>>> GetDoctorAppointments()
         {
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            
+            var doctor = await _context.Doctors.FirstOrDefaultAsync(d => d.UserId == userId);
+            if (doctor == null) return NotFound("Doctor profile not found.");
+
             return await _context.Appointments
                 .Include(a => a.Patient)
                 .Include(a => a.Therapy)
-                .Where(a => a.DoctorId == doctorId)
+                .Where(a => a.DoctorId == doctor.DoctorId)
                 .ToListAsync();
         }
 

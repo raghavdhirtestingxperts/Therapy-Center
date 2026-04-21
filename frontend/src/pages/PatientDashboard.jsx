@@ -1,38 +1,27 @@
 import { useEffect, useState } from 'react';
 import { Face as FaceIcon, EventNote as EventNoteIcon } from '@mui/icons-material';
-
-interface Appointment {
-  appointmentId: number;
-  doctorId: number;
-  appointmentDate: string;
-  startTime: string;
-  status: string;
-  doctor: { user: { firstName: string; lastName: string } };
-  therapy: { name: string };
-}
+import { useAuth } from '../contexts/AuthContext';
 
 const PatientDashboard = () => {
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const { user } = useAuth();
+  const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
-        const userStr = localStorage.getItem('user');
-        if (!userStr) throw new Error('Not logged in');
-        
-        const userData = JSON.parse(userStr);
+        if (!user) throw new Error('Not logged in');
 
         const response = await fetch('/api/Patient/appointments', {
-          headers: { 'Authorization': `Bearer ${userData.token}` }
+          headers: { 'Authorization': `Bearer ${user.token}` }
         });
 
         if (!response.ok) throw new Error('Failed to fetch patient appointments');
         
         const data = await response.json();
         setAppointments(data);
-      } catch (err: any) {
+      } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);

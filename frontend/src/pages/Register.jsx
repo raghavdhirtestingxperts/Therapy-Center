@@ -17,7 +17,7 @@ const Register = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -36,7 +36,7 @@ const Register = () => {
 
       // Successfully registered
       navigate('/login');
-    } catch (err: any) {
+    } catch (err) {
       console.error('Register error:', err);
       setError(err.message || 'Error occurred during registration');
     } finally {
@@ -44,7 +44,7 @@ const Register = () => {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
   };
 

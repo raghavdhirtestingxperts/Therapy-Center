@@ -1,13 +1,17 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { MedicalServices } from '@mui/icons-material';
+import { useAuth } from '../contexts/AuthContext';
 
 const Navigation = () => {
   const location = useLocation();
-  const isAuthenticated = !!localStorage.getItem('user');
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  
+  const isAuthenticated = !!user;
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
-    window.location.href = '/login';
+    logout();
+    navigate('/login');
   };
 
   return (
