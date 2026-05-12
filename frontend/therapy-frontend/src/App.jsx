@@ -6,7 +6,7 @@ import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
 import PatientDashboard from './pages/PatientDashboard';
 import ReceptionistView from './pages/ReceptionistView';
-import DoctorPortal from './pages/DoctorPortal';
+import LandingPage from './pages/LandingPage';
 
 function App() {
   const [auth, setAuth] = useState({
@@ -29,7 +29,7 @@ function App() {
         <Navbar onLogout={updateAuth} />
         <div className="container mt-4 pb-5">
           <Routes>
-            <Route path="/" element={auth.token ? <Navigate to={`/${auth.role?.toLowerCase()}`} /> : <Navigate to="/login" />} />
+            <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={auth.token ? <Navigate to={`/${auth.role?.toLowerCase()}`} /> : <Login onLogin={updateAuth} />} />
             <Route path="/register" element={auth.token ? <Navigate to={`/${auth.role?.toLowerCase()}`} /> : <Register />} />
             <Route path="/admin" element={auth.role === 'Admin' ? <AdminDashboard /> : <Navigate to="/login" />} />
