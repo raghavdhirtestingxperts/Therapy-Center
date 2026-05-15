@@ -50,6 +50,9 @@ public class AuthController : ControllerBase
         return Ok("User registered successfully.");
     }
 
+    [HttpGet("ping")]
+    public IActionResult Ping() => Ok(new { status = "healthy", timestamp = DateTime.UtcNow });
+
     private string GenerateJwtToken(User user)
     {
         var jwtKey = _configuration["Jwt:Key"];

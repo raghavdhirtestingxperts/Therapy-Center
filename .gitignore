@@ -1,0 +1,19 @@
+# Root-level .gitignore for Therapy Center monorepo
+
+# ── .NET Backend ────────────────────────────────────────────────────────────────
+backend/TherapyCenterAPI/bin/
+backend/TherapyCenterAPI/obj/
+backend/TherapyCenterAPI/appsettings.Development.json
+backend/TherapyCenterAPI/*.user
+
+# ── Frontend ────────────────────────────────────────────────────────────────────
+frontend/therapy-frontend/node_modules/
+frontend/therapy-frontend/dist/
+frontend/therapy-frontend/.env
+frontend/therapy-frontend/.env.local
+frontend/therapy-frontend/.env.production
+
+# ── General ─────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log

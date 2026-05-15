@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
 import PatientDashboard from './pages/PatientDashboard';
 import ReceptionistView from './pages/ReceptionistView';
+import DoctorPortal from './pages/DoctorPortal';
 import LandingPage from './pages/LandingPage';
 
 function App() {
