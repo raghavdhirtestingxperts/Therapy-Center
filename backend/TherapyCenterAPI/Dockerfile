@@ -17,9 +17,6 @@ WORKDIR /app
 
 COPY --from=build /app/publish .
 
-# Railway injects PORT; ASP.NET Core reads ASPNETCORE_URLS
-ENV ASPNETCORE_URLS=http://+:${PORT:-8080}
-
 EXPOSE 8080
 
-ENTRYPOINT ["dotnet", "TherapyCenterAPI.dll"]
+ENTRYPOINT ["sh", "-c", "ASPNETCORE_URLS=http://+:${PORT:-8080} dotnet TherapyCenterAPI.dll"]
