@@ -36,6 +36,34 @@ const PatientDashboard = () => {
   const config = { headers: { Authorization: `Bearer ${token}` } };
   const fmt = (ts) => ts ? ts.substring(0, 5) : '';
 
+  const getTodayString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getFilteredSlots = () => {
+    if (!slots) return [];
+    if (booking.date !== getTodayString()) {
+      return slots;
+    }
+    const now = new Date();
+    const currentHours = now.getHours();
+    const currentMinutes = now.getMinutes();
+
+    return slots.filter(s => {
+      if (!s.startTime) return false;
+      const parts = s.startTime.split(':');
+      const slotHours = parseInt(parts[0], 10);
+      const slotMinutes = parseInt(parts[1], 10);
+      if (slotHours > currentHours) return true;
+      if (slotHours === currentHours && slotMinutes > currentMinutes) return true;
+      return false;
+    });
+  };
+
   const fetchData = async () => {
     try {
       const [appRes, patientsRes, therapiesRes] = await Promise.all([
@@ -336,7 +364,7 @@ const PatientDashboard = () => {
                     </div>
                     <div className="mb-4">
                       <label className="form-label small fw-bold">Preferred Date</label>
-                      <input type="date" className="form-control" value={booking.date} onChange={e => setBooking({...booking, date: e.target.value, slot: null})} />
+                      <input type="date" className="form-control" value={booking.date} min={getTodayString()} onChange={e => setBooking({...booking, date: e.target.value, slot: null})} />
                     </div>
                     <div className="d-flex justify-content-between">
                       <button className="btn btn-light rounded-pill px-4" onClick={() => setStep(1)}>Back</button>
@@ -348,7 +376,7 @@ const PatientDashboard = () => {
                   <div>
                     <h6 className="fw-bold text-muted mb-3 small">STEP 3: SELECT TIME SLOT</h6>
                     <div className="row g-2 mb-4">
-                      {slots.length === 0 ? <p className="text-center py-4 small text-muted col-12">No available slots for this day. Try another date.</p> : slots.map(s => (
+                      {getFilteredSlots().length === 0 ? <p className="text-center py-4 small text-muted col-12">No available slots for this day. Try another date.</p> : getFilteredSlots().map(s => (
                         <div className="col-4 col-md-3" key={s.slotId}>
                           <button className={`btn btn-sm w-100 rounded-3 py-2 ${booking.slot?.slotId === s.slotId ? 'btn-primary' : 'btn-outline-primary'}`}
                             onClick={() => setBooking({...booking, slot: s})}>
