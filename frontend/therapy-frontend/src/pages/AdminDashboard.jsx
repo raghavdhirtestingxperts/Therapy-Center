@@ -17,6 +17,14 @@ const AdminDashboard = () => {
   const token = localStorage.getItem('token');
   const config = { headers: { Authorization: `Bearer ${token}` } };
 
+  const getTodayString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const fetchAll = async () => {
     try {
       const [t, u, d, s] = await Promise.all([
@@ -366,7 +374,7 @@ const AdminDashboard = () => {
                 <form onSubmit={handleGenerateSlots}>
                   <div className="modal-body">
                     <div className="mb-3"><label className="form-label small fw-bold">Doctor</label><select className="form-select" value={form.doctorId || ''} onChange={e => setForm({...form, doctorId: parseInt(e.target.value)})} required><option value="">Choose...</option>{doctors.map(d => <option key={d.doctorId} value={d.doctorId}>Dr. {d.user?.firstName} {d.user?.lastName}</option>)}</select></div>
-                    <div className="mb-3"><label className="form-label small fw-bold">Date</label><input type="date" className="form-control" value={form.date || ''} onChange={e => setForm({...form, date: e.target.value})} required /></div>
+                     <div className="mb-3"><label className="form-label small fw-bold">Date</label><input type="date" className="form-control" value={form.date || ''} min={getTodayString()} onChange={e => setForm({...form, date: e.target.value})} required /></div>
                     <div className="mb-3"><label className="form-label small fw-bold">Slot Duration (mins)</label><input type="number" className="form-control" value={form.slotDurationMinutes || 45} onChange={e => setForm({...form, slotDurationMinutes: parseInt(e.target.value)})} required /></div>
                   </div>
                   <div className="modal-footer"><button type="button" className="btn btn-light" onClick={() => setShowModal(null)}>Cancel</button><button type="submit" className="btn btn-primary">Generate</button></div>
