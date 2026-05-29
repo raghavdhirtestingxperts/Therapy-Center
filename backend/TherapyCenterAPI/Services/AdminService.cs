@@ -205,6 +205,7 @@ public class AdminService : IAdminService
         var duration = request.SlotDurationMinutes > 0 ? request.SlotDurationMinutes : 45;
         var currentTime = doctor.StartTime;
         var slotsCreated = 0;
+        var slotsSkipped = 0;
 
         while (currentTime.Add(TimeSpan.FromMinutes(duration)) <= doctor.EndTime)
         {
@@ -223,10 +224,27 @@ public class AdminService : IAdminService
                 });
                 slotsCreated++;
             }
+            else
+            {
+                slotsSkipped++;
+            }
             currentTime = endTime;
         }
 
         await _slotRepository.SaveChangesAsync();
+
+        if (slotsCreated == 0)
+        {
+            if (slotsSkipped > 0)
+            {
+                return (true, "Slots already created.", 0);
+            }
+            else
+            {
+                return (false, "No slots could be created (duration exceeds working hours).", 0);
+            }
+        }
+
         return (true, $"{slotsCreated} slots created.", slotsCreated);
     }
 
