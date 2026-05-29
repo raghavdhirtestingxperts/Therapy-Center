@@ -1,3 +1,4 @@
+// Trigger Vercel build to complete theme switcher rollback
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
