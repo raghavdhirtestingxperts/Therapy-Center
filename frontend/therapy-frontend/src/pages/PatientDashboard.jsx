@@ -3,6 +3,20 @@ import axios from 'axios';
 import API_BASE_URL from '../apiConfig';
 import { Calendar, FileText, CreditCard, ChevronRight, Clock, UserPlus, CheckCircle, AlertCircle } from 'lucide-react';
 
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 const PatientDashboard = () => {
   const [activeTab, setActiveTab] = useState('appointments');
   const [appointments, setAppointments] = useState([]);
@@ -83,13 +97,83 @@ const PatientDashboard = () => {
 
   const handlePayment = async (appointmentId) => {
     setPayingId(appointmentId);
-    setTimeout(async () => {
-      try {
-        await axios.post(`${API_BASE_URL}/payment/pay`, { appointmentId, paymentMethod: 'Online' }, config);
-        alert('Payment Successful!'); fetchData();
-      } catch (err) { alert(err.response?.data || 'Payment failed'); }
+    try {
+      // 1. Create order on the backend
+      const res = await axios.post(`${API_BASE_URL}/payment/create-order`, { appointmentId }, config);
+      const orderData = res.data;
+
+      // 2. Handle Mock Mode fallback
+      if (orderData.mockMode) {
+        const proceedWithMock = window.confirm(
+          `Demo mode: No Razorpay credentials configured.\n` +
+          `Order ID: ${orderData.orderId}\n` +
+          `Amount: ₹${(orderData.amount / 100).toFixed(2)}\n\n` +
+          `Do you want to simulate a successful payment?`
+        );
+        
+        if (proceedWithMock) {
+          await axios.post(`${API_BASE_URL}/payment/verify`, {
+            appointmentId,
+            razorpayOrderId: orderData.orderId,
+            razorpayPaymentId: `pay_mock_${Date.now()}`,
+            razorpaySignature: 'mock_signature_verification_skipped'
+          }, config);
+          alert('Payment Simulated Successfully!');
+          fetchData();
+        }
+      } else {
+        // 3. Launch real Razorpay checkout modal
+        const isLoaded = await loadRazorpayScript();
+        if (!isLoaded) {
+          alert('Failed to load Razorpay SDK. Please check your internet connection.');
+          setPayingId(null);
+          return;
+        }
+
+        const options = {
+          key: orderData.key,
+          amount: orderData.amount,
+          currency: orderData.currency,
+          name: 'Therapy Center',
+          description: 'Therapy Session Payment',
+          order_id: orderData.orderId,
+          handler: async function (response) {
+            try {
+              await axios.post(`${API_BASE_URL}/payment/verify`, {
+                appointmentId,
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature
+              }, config);
+              alert('Payment Successful!');
+              fetchData();
+            } catch (err) {
+              alert(err.response?.data || 'Payment verification failed.');
+            }
+          },
+          prefill: {
+            name: orderData.patientName,
+            email: orderData.patientEmail,
+            contact: orderData.patientPhone
+          },
+          theme: {
+            color: '#6366f1'
+          },
+          modal: {
+            ondismiss: function () {
+              // Action on close
+            }
+          }
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      }
+    } catch (err) {
+      alert(err.response?.data || 'Payment failed to initialize.');
+    } finally {
       setPayingId(null);
-    }, 1500);
+    }
   };
 
   const handleAddChild = async (e) => {

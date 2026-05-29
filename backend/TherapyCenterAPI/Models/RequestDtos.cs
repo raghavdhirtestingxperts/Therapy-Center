@@ -75,3 +75,17 @@ public class DummyPayRequest
     public int AppointmentId { get; set; }
     public string? PaymentMethod { get; set; }
 }
+
+public class RazorpayOrderRequest
+{
+    public int AppointmentId { get; set; }
+}
+
+public class RazorpayVerifyRequest
+{
+    public int AppointmentId { get; set; }
+    public string RazorpayOrderId { get; set; } = string.Empty;
+    public string RazorpayPaymentId { get; set; } = string.Empty;
+    public string RazorpaySignature { get; set; } = string.Empty;
+}
+

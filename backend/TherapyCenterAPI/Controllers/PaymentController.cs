@@ -26,6 +26,22 @@ public class PaymentController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("create-order")]
+    public async Task<IActionResult> CreateOrder([FromBody] RazorpayOrderRequest request)
+    {
+        var (success, message, result) = await _paymentService.CreateRazorpayOrderAsync(request);
+        if (!success) return BadRequest(message);
+        return Ok(result);
+    }
+
+    [HttpPost("verify")]
+    public async Task<IActionResult> Verify([FromBody] RazorpayVerifyRequest request)
+    {
+        var (success, message, result) = await _paymentService.VerifyRazorpayPaymentAsync(request);
+        if (!success) return BadRequest(message);
+        return Ok(result);
+    }
+
     [HttpGet("history")]
     public async Task<IActionResult> GetPaymentHistory()
     {
