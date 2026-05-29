@@ -1,9 +1,8 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TherapyCenterAPI.Data;
 using TherapyCenterAPI.Models;
-using System.Security.Claims;
+using TherapyCenterAPI.Services;
 
 namespace TherapyCenterAPI.Controllers;
 
@@ -12,83 +11,49 @@ namespace TherapyCenterAPI.Controllers;
 [Authorize]
 public class PatientController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IPatientService _patientService;
 
-    public PatientController(ApplicationDbContext context)
+    public PatientController(IPatientService patientService)
     {
-        _context = context;
+        _patientService = patientService;
     }
 
     [HttpGet("my-patient")]
-    public async Task<ActionResult<Patient>> GetMyPatient()
+    public async Task<IActionResult> GetMyPatient()
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
+        if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
+            return Unauthorized();
 
-        var patient = await _context.Patients.FirstOrDefaultAsync(p => p.GuardianId == int.Parse(userIdStr));
+        var patient = await _patientService.GetMyPatientAsync(userId);
         if (patient == null) return NotFound();
-        return patient;
+        return Ok(patient);
     }
 
     [HttpGet("my-patients")]
-    public async Task<ActionResult<IEnumerable<Patient>>> GetMyPatients()
+    public async Task<IActionResult> GetMyPatients()
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userIdStr)) return Unauthorized();
+        if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
+            return Unauthorized();
 
-        return await _context.Patients
-            .Where(p => p.GuardianId == int.Parse(userIdStr))
-            .ToListAsync();
+        return Ok(await _patientService.GetMyPatientsAsync(userId));
     }
 
     [HttpPost]
     public async Task<IActionResult> CreatePatient([FromBody] CreatePatientRequest request)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var role = User.FindFirstValue(ClaimTypes.Role);
+        var role = User.FindFirstValue(ClaimTypes.Role) ?? "";
 
-        var patient = new Patient
-        {
-            FirstName = request.FirstName,
-            LastName = request.LastName,
-            DateOfBirth = request.DateOfBirth,
-            Gender = request.Gender,
-            MedicalHistory = request.MedicalHistory ?? ""
-        };
+        if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
+            return Unauthorized();
 
-        // If guardian is adding their child, link it
-        if (role == "Guardian" || role == "Patient")
-        {
-            patient.GuardianId = int.Parse(userIdStr!);
-        }
-        else if (request.GuardianId.HasValue)
-        {
-            patient.GuardianId = request.GuardianId;
-        }
-
-        _context.Patients.Add(patient);
-        await _context.SaveChangesAsync();
+        var patient = await _patientService.CreatePatientAsync(request, role, userId);
         return Ok(patient);
     }
 
     [HttpGet("{patientId}/findings")]
-    public async Task<ActionResult<IEnumerable<DoctorFinding>>> GetFindings(int patientId)
-    {
-        return await _context.DoctorFindings
-            .Include(f => f.Appointment).ThenInclude(a => a.Doctor).ThenInclude(d => d.User)
-            .Include(f => f.Appointment).ThenInclude(a => a.Therapy)
-            .Where(f => f.Appointment.PatientId == patientId)
-            .OrderByDescending(f => f.CreatedAt)
-            .ToListAsync();
-    }
-}
-
-public class CreatePatientRequest
-{
-    public string FirstName { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
-    public DateTime DateOfBirth { get; set; }
-    public string Gender { get; set; } = string.Empty;
-    public string? MedicalHistory { get; set; }
-    public int? GuardianId { get; set; }
+    public async Task<IActionResult> GetFindings(int patientId)
+        => Ok(await _patientService.GetFindingsAsync(patientId));
 }

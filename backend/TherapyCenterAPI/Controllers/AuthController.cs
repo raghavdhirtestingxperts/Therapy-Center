@@ -2,10 +2,9 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using TherapyCenterAPI.Data;
 using TherapyCenterAPI.Models;
+using TherapyCenterAPI.Services;
 
 namespace TherapyCenterAPI.Controllers;
 
@@ -13,24 +12,21 @@ namespace TherapyCenterAPI.Controllers;
 [ApiController]
 public class AuthController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IAuthService _authService;
     private readonly IConfiguration _configuration;
 
-    public AuthController(ApplicationDbContext context, IConfiguration configuration)
+    public AuthController(IAuthService authService, IConfiguration configuration)
     {
-        _context = context;
+        _authService = authService;
         _configuration = configuration;
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email && u.PasswordHash == request.Password);
-        
-        if (user == null || !user.IsActive)
-        {
+        var user = await _authService.AuthenticateAsync(request.Email, request.Password);
+        if (user == null)
             return Unauthorized("Invalid credentials or inactive account.");
-        }
 
         var token = GenerateJwtToken(user);
         return Ok(new { token, role = user.Role, userId = user.UserId });
@@ -39,15 +35,9 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] User user)
     {
-        if (await _context.Users.AnyAsync(u => u.Email == user.Email))
-        {
-            return BadRequest("Email already exists.");
-        }
-
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
-
-        return Ok("User registered successfully.");
+        var (success, message) = await _authService.RegisterAsync(user);
+        if (!success) return BadRequest(message);
+        return Ok(message);
     }
 
     [HttpGet("ping")]
@@ -78,10 +68,4 @@ public class AuthController : ControllerBase
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
-}
-
-public class LoginRequest
-{
-    public string Email { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
 }

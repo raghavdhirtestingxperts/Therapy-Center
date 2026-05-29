@@ -3,13 +3,15 @@ import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Lock, LogIn } from 'lucide-react';
 import API_BASE_URL from '../apiConfig';
+import { useAuth } from '../context/AuthContext';
 
-const Login = ({ onLogin }) => {
+const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -17,10 +19,8 @@ const Login = ({ onLogin }) => {
     setError('');
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/login`, { email, password });
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('role', response.data.role);
-      localStorage.setItem('userId', response.data.userId);
-      if (onLogin) onLogin();
+      // login() writes to both React state and localStorage atomically
+      login(response.data);
       navigate(`/${response.data.role.toLowerCase()}`);
     } catch (err) {
       setError('Invalid email or password. Please try again.');

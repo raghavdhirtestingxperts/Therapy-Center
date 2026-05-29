@@ -1,9 +1,7 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TherapyCenterAPI.Data;
 using TherapyCenterAPI.Models;
+using TherapyCenterAPI.Services;
 
 namespace TherapyCenterAPI.Controllers;
 
@@ -12,59 +10,33 @@ namespace TherapyCenterAPI.Controllers;
 [Authorize(Roles = "Doctor,Admin")]
 public class DoctorController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDoctorService _doctorService;
 
-    public DoctorController(ApplicationDbContext context)
+    public DoctorController(IDoctorService doctorService)
     {
-        _context = context;
+        _doctorService = doctorService;
     }
 
     [HttpPost("findings")]
-    public async Task<ActionResult<DoctorFinding>> SubmitFindings([FromBody] SubmitFindingRequest request)
+    public async Task<IActionResult> SubmitFindings([FromBody] SubmitFindingRequest request)
     {
-        var finding = new DoctorFinding
-        {
-            AppointmentId = request.AppointmentId,
-            Observations = request.Observations,
-            Recommendations = request.Recommendations,
-            NextSessionDate = request.NextSessionDate
-        };
-
-        _context.DoctorFindings.Add(finding);
-
-        // Update appointment status to completed
-        var appointment = await _context.Appointments.FindAsync(finding.AppointmentId);
-        if (appointment != null) appointment.Status = "Completed";
-
-        await _context.SaveChangesAsync();
+        var finding = await _doctorService.SubmitFindingsAsync(request);
         return Ok(finding);
     }
 
     [HttpGet("findings/{id}")]
-    public async Task<ActionResult<DoctorFinding>> GetFinding(int id)
+    public async Task<IActionResult> GetFinding(int id)
     {
-        var finding = await _context.DoctorFindings
-            .Include(f => f.Appointment).ThenInclude(a => a.Therapy)
-            .FirstOrDefaultAsync(f => f.FindingId == id);
+        var finding = await _doctorService.GetFindingAsync(id);
         if (finding == null) return NotFound();
-        return finding;
+        return Ok(finding);
     }
 
     [HttpGet("findings/appointment/{appointmentId}")]
-    public async Task<ActionResult<DoctorFinding>> GetFindingByAppointment(int appointmentId)
+    public async Task<IActionResult> GetFindingByAppointment(int appointmentId)
     {
-        var finding = await _context.DoctorFindings
-            .Include(f => f.Appointment).ThenInclude(a => a.Therapy)
-            .FirstOrDefaultAsync(f => f.AppointmentId == appointmentId);
+        var finding = await _doctorService.GetFindingByAppointmentAsync(appointmentId);
         if (finding == null) return NotFound();
-        return finding;
+        return Ok(finding);
     }
-}
-
-public class SubmitFindingRequest
-{
-    public int AppointmentId { get; set; }
-    public string Observations { get; set; } = string.Empty;
-    public string Recommendations { get; set; } = string.Empty;
-    public DateTime? NextSessionDate { get; set; }
 }
