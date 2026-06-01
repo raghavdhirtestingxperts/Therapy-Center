@@ -28,6 +28,11 @@ A comprehensive Full-Stack Management Solution for therapy centers specializing 
 - **Payment History**: Track all paid and pending session fees.
 - **Profile Management**: Manage multiple child profiles under one guardian account.
 
+### ✨ Personalization & Greetings
+- **Dynamic Time-Based Greetings**: Greets logged-in users with a time-appropriate message ("Good Morning", "Good Afternoon", "Good Evening", or "Hello") followed by their name on the dashboard header.
+- **Persistent Navbar Greeting**: Shows a personalized welcome in the global navigation bar next to the role badge.
+- **Session Profile Recovery**: Powered by a secure `/api/auth/profile` backend endpoint that restores user names on page refresh.
+
 ---
 
 ## 🛠 Tech Stack
@@ -92,6 +97,32 @@ The system uses a relational MySQL schema:
    npm run dev
    ```
    *The App will be available at http://localhost:5173*
+
+---
+
+## 💳 Payment Gateway Integration (Razorpay)
+
+The system features a fully functional Razorpay Payment Gateway integration supporting both live testing and a fallback mock demo mode:
+
+### 1. Mock/Demo Mode (Default Setup)
+- If Razorpay API keys are not configured or are set to their default placeholder values in `appsettings.json`, the application automatically defaults to **Mock Mode**.
+- The backend generates a mock order (`order_mock_...`) and the frontend prompts the user with a browser confirmation dialog to simulate a successful checkout.
+- Upon confirmation, a mock payment verification request is processed and stored in the database as completed (Method: `Razorpay`, Status: `Paid`).
+
+### 2. Sandbox/Test Mode Setup
+To run actual test-mode transactions using the official Razorpay Checkout interface:
+1. Log in to your [Razorpay Dashboard](https://dashboard.razorpay.com/) and generate **Test API Keys** (`Key ID` and `Key Secret`).
+2. Add these credentials to the `Razorpay` configuration block in `backend/TherapyCenterAPI/appsettings.json`:
+   ```json
+   "Razorpay": {
+     "KeyId": "rzp_test_YOUR_KEY_ID",
+     "KeySecret": "YOUR_KEY_SECRET"
+   }
+   ```
+3. The application will automatically detect the presence of real keys and transition into Sandbox mode:
+   - Frontend will load the Razorpay checkout script from `https://checkout.razorpay.com/v1/checkout.js`.
+   - Clicking "Pay Now" will open the official Razorpay checkout modal allowing you to test payments (e.g., using test cards, Netbanking, or UPI).
+   - The backend validates the integrity of payments via an HMAC-SHA256 signature verification utilizing the configured `KeySecret` before saving the transaction records.
 
 ---
 
