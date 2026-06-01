@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import API_BASE_URL from '../apiConfig';
 import { FileText, Calendar, Clock, Send, ChevronDown } from 'lucide-react';
+import { useAuth, getGreeting } from '../context/AuthContext';
 
 const DoctorPortal = () => {
+  const { auth } = useAuth();
   const [appointments, setAppointments] = useState([]);
   const [selectedApp, setSelectedApp] = useState(null);
   const [patientHistory, setPatientHistory] = useState([]);
@@ -57,7 +59,7 @@ const DoctorPortal = () => {
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h2 className="fw-bold mb-0" style={{ color: 'var(--text-primary)' }}>Doctor Portal</h2>
+        <h2 className="fw-bold mb-0" style={{ color: 'var(--text-primary)' }}>{getGreeting(auth.firstName, 'Doctor')}</h2>
         <div className="d-flex align-items-center gap-2">
           <Calendar size={16} className="text-muted" />
           <input type="date" className="form-control form-control-sm" style={{ width: 160 }} value={dateFilter} onChange={e => setDateFilter(e.target.value)} />

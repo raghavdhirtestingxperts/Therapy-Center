@@ -1,9 +1,11 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using TherapyCenterAPI.Models;
+using TherapyCenterAPI.Repositories;
 using TherapyCenterAPI.Services;
 
 namespace TherapyCenterAPI.Controllers;
@@ -14,11 +16,13 @@ public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
     private readonly IConfiguration _configuration;
+    private readonly IUserRepository _userRepository;
 
-    public AuthController(IAuthService authService, IConfiguration configuration)
+    public AuthController(IAuthService authService, IConfiguration configuration, IUserRepository userRepository)
     {
         _authService = authService;
         _configuration = configuration;
+        _userRepository = userRepository;
     }
 
     [HttpPost("login")]
@@ -29,7 +33,22 @@ public class AuthController : ControllerBase
             return Unauthorized("Invalid credentials or inactive account.");
 
         var token = GenerateJwtToken(user);
-        return Ok(new { token, role = user.Role, userId = user.UserId });
+        return Ok(new { token, role = user.Role, userId = user.UserId, firstName = user.FirstName, lastName = user.LastName });
+    }
+
+    [Authorize]
+    [HttpGet("profile")]
+    public async Task<IActionResult> GetProfile()
+    {
+        var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
+            return Unauthorized("User is not logged in or invalid token.");
+
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null || !user.IsActive)
+            return NotFound("User not found or inactive.");
+
+        return Ok(new { userId = user.UserId, firstName = user.FirstName, lastName = user.LastName, role = user.Role });
     }
 
     [HttpPost("register")]

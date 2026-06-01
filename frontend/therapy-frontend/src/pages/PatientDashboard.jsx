@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import API_BASE_URL from '../apiConfig';
 import { Calendar, FileText, CreditCard, ChevronRight, Clock, UserPlus, CheckCircle, AlertCircle } from 'lucide-react';
+import { useAuth, getGreeting } from '../context/AuthContext';
 
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
@@ -18,6 +19,7 @@ const loadRazorpayScript = () => {
 };
 
 const PatientDashboard = () => {
+  const { auth } = useAuth();
   const [activeTab, setActiveTab] = useState('appointments');
   const [appointments, setAppointments] = useState([]);
   const [findings, setFindings] = useState([]);
@@ -219,9 +221,9 @@ const PatientDashboard = () => {
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
-          <h2 className="fw-bold mb-0" style={{ color: 'var(--text-primary)' }}>Guardian Portal</h2>
+          <h2 className="fw-bold mb-0" style={{ color: 'var(--text-primary)' }}>{getGreeting(auth.firstName, 'Guardian')}</h2>
           <p className="text-muted small mb-0">
-            Managing: {patients.map(p => p.firstName).join(', ') || 'No children added yet'}
+            Guardian Portal — Managing: {patients.map(p => p.firstName).join(', ') || 'No children added yet'}
           </p>
         </div>
         <div className="d-flex gap-2 align-items-center flex-wrap">

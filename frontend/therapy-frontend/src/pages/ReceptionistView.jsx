@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import API_BASE_URL from '../apiConfig';
 import { Calendar, Search, Clock, XCircle, UserPlus, CreditCard, Filter } from 'lucide-react';
+import { useAuth, getGreeting } from '../context/AuthContext';
 
 const ReceptionistView = () => {
+  const { auth } = useAuth();
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
   const [doctors, setDoctors] = useState([]);
@@ -94,7 +96,7 @@ const ReceptionistView = () => {
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h2 className="fw-bold mb-0" style={{ color: 'var(--text-primary)' }}>Receptionist Dashboard</h2>
+        <h2 className="fw-bold mb-0" style={{ color: 'var(--text-primary)' }}>{getGreeting(auth.firstName, 'Receptionist')}</h2>
         <div className="d-flex gap-2">
           <button className="btn btn-outline-primary rounded-pill px-3 d-flex align-items-center gap-2" onClick={() => setShowModal('patient')}>
             <UserPlus size={16} /> Add Patient

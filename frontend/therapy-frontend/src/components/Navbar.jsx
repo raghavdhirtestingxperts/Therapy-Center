@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { LogOut, Heart } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, getGreeting } from '../context/AuthContext';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -19,6 +19,7 @@ const Navbar = () => {
         </Link>
         {auth.token ? (
           <div className="d-flex align-items-center gap-3">
+            <span className="text-white small fw-medium">{getGreeting(auth.firstName, auth.role)}</span>
             <span className="badge rounded-pill px-3 py-2" style={{ background: 'rgba(255,255,255,0.2)', color: 'white' }}>{auth.role}</span>
             <button
               className="btn btn-sm d-flex align-items-center gap-1 px-3 rounded-pill"
