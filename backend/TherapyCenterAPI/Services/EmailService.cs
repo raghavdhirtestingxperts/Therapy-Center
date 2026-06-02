@@ -1,5 +1,6 @@
-using System.Net;
-using System.Net.Mail;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
 
 namespace TherapyCenterAPI.Services;
 
@@ -7,6 +8,7 @@ public class EmailService : IEmailService
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<EmailService> _logger;
+    private static readonly HttpClient _httpClient = new HttpClient();
 
     public EmailService(IConfiguration configuration, ILogger<EmailService> logger)
     {
@@ -27,44 +29,68 @@ public class EmailService : IEmailService
                                "********************************************************************************\n" +
                                "********************************************************************************\n");
 
-        // 2. Real SMTP sending
-        var smtpServer = _configuration["EmailSettings:SmtpServer"];
+        // 2. Real SendGrid HTTP API sending (Port 443 - never blocked by cloud providers)
+        var apiKey = _configuration["EmailSettings:SendGridApiKey"];
         var senderEmail = _configuration["EmailSettings:SenderEmail"];
-        var senderPassword = _configuration["EmailSettings:SenderPassword"];
 
-        if (string.IsNullOrWhiteSpace(smtpServer) || string.IsNullOrWhiteSpace(senderEmail) || string.IsNullOrWhiteSpace(senderPassword))
+        if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(senderEmail))
         {
-            _logger.LogWarning("SMTP Settings not fully configured in appsettings.json. Email was not sent via SMTP.");
+            _logger.LogWarning("SendGrid SMTP/API Settings not fully configured in appsettings.json or environment variables. Email was not sent via HTTP API.");
             return;
         }
 
-        int smtpPort = int.TryParse(_configuration["EmailSettings:SmtpPort"], out var port) ? port : 587;
-        bool enableSsl = !bool.TryParse(_configuration["EmailSettings:EnableSsl"], out var ssl) || ssl;
-
         try
         {
-            using var client = new SmtpClient(smtpServer, smtpPort)
+            var payload = new
             {
-                Credentials = new NetworkCredential(senderEmail, senderPassword),
-                EnableSsl = enableSsl,
-                Timeout = 10000 // 10 seconds timeout to prevent hanging on blocked ports
+                personalizations = new[]
+                {
+                    new
+                    {
+                        to = new[]
+                        {
+                            new { email = toEmail }
+                        },
+                        subject = subject
+                    }
+                },
+                from = new
+                {
+                    email = senderEmail,
+                    name = "Special Kids Therapy Center"
+                },
+                content = new[]
+                {
+                    new
+                    {
+                        type = "text/html",
+                        value = body
+                    }
+                }
             };
 
-            var mailMessage = new MailMessage
-            {
-                From = new MailAddress(senderEmail, "Special Kids Therapy Center"),
-                Subject = subject,
-                Body = body,
-                IsBodyHtml = true
-            };
-            mailMessage.To.Add(toEmail);
+            var json = JsonSerializer.Serialize(payload);
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            await client.SendMailAsync(mailMessage);
-            _logger.LogInformation($"Successfully sent email to {toEmail} via SMTP ({smtpServer}:{smtpPort}).");
+            using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.sendgrid.com/v3/mail/send");
+            request.Headers.Add("Authorization", $"Bearer {apiKey}");
+            request.Content = content;
+
+            using var response = await _httpClient.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation($"Successfully sent email to {toEmail} via SendGrid HTTP API.");
+            }
+            else
+            {
+                var errorResponse = await response.Content.ReadAsStringAsync();
+                _logger.LogError($"Failed to send email to {toEmail} via SendGrid HTTP API. Status: {response.StatusCode}, Error: {errorResponse}");
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Failed to send email to {toEmail} via SMTP.");
+            _logger.LogError(ex, $"Failed to send email to {toEmail} via SendGrid HTTP API.");
         }
     }
 }
