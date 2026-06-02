@@ -46,7 +46,8 @@ public class EmailService : IEmailService
             using var client = new SmtpClient(smtpServer, smtpPort)
             {
                 Credentials = new NetworkCredential(senderEmail, senderPassword),
-                EnableSsl = enableSsl
+                EnableSsl = enableSsl,
+                Timeout = 10000 // 10 seconds timeout to prevent hanging on blocked ports
             };
 
             var mailMessage = new MailMessage
