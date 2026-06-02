@@ -124,7 +124,7 @@ const DoctorPortal = () => {
                 <div className="card-header py-3 d-flex align-items-center gap-2">
                   <FileText size={16} className="text-muted" />
                   <span className="fw-bold small text-muted">PREVIOUS FINDINGS</span>
-                  <span className="badge bg-light text-muted ms-auto">{patientHistory.length}</span>
+                  <span className="badge bg-secondary-subtle ms-auto">{patientHistory.length}</span>
                 </div>
                 <div style={{ maxHeight: 220, overflowY: 'auto' }}>
                   {patientHistory.length === 0 ? <p className="p-3 mb-0 small text-muted">No previous history found for this patient.</p> : patientHistory.map(h => (

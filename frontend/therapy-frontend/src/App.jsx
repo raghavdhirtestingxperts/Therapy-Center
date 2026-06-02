@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -9,12 +10,12 @@ import ReceptionistView from './pages/ReceptionistView';
 import DoctorPortal from './pages/DoctorPortal';
 import LandingPage from './pages/LandingPage';
 
-function App() {
+function AppRoutes() {
   const { auth } = useAuth();
 
   return (
     <Router>
-      <div className="App" style={{ minHeight: '100vh', background: 'var(--surface)' }}>
+      <div className="App" style={{ minHeight: '100vh', backgroundColor: 'var(--bg)' }}>
         <Navbar />
         <div className="container mt-4 pb-5">
           <Routes>
@@ -47,6 +48,14 @@ function App() {
         </div>
       </div>
     </Router>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <AppRoutes />
+    </ThemeProvider>
   );
 }
 

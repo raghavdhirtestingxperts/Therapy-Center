@@ -136,7 +136,7 @@ const AdminDashboard = () => {
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <h2 className="fw-bold mb-0" style={{ color: 'var(--text-primary)' }}>Admin Control Center</h2>
-        <div className="nav nav-pills p-1 rounded-pill shadow-sm" style={{ background: 'white' }}>
+        <div className="nav nav-pills p-1 rounded-pill shadow-sm">
           {tabs.map(t => (
             <button key={t.key} className={`nav-link rounded-pill px-3 py-2 d-flex align-items-center gap-2 ${activeTab === t.key ? 'active' : ''}`} onClick={() => setActiveTab(t.key)}>
               {t.icon} {t.label}
@@ -185,7 +185,7 @@ const AdminDashboard = () => {
                     {therapies.map(t => (
                       <tr key={t.therapyId}>
                         <td><div className="fw-bold">{t.name}</div><small className="text-muted">{t.description}</small></td>
-                        <td><span className="badge bg-light text-dark">{t.durationMinutes} mins</span></td>
+                        <td><span className="badge bg-primary-subtle text-primary">{t.durationMinutes} mins</span></td>
                         <td><span className="fw-bold" style={{ color: 'var(--bs-primary)' }}>₹{t.cost}</span></td>
                         <td>
                           <button className="btn btn-sm btn-light me-1" onClick={() => openEdit('therapy', t)}><Edit size={15} /></button>

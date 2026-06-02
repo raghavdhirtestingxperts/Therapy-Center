@@ -113,14 +113,14 @@ const ReceptionistView = () => {
           <div className="row g-3 align-items-center">
             <div className="col-md-6">
               <div className="input-group">
-                <span className="input-group-text bg-light border-end-0"><Search size={16} className="text-muted" /></span>
-                <input type="text" className="form-control bg-light border-start-0" placeholder="Search by patient name..." value={search} onChange={e => setSearch(e.target.value)} />
+                <span className="input-group-text border-end-0"><Search size={16} className="text-muted" /></span>
+                <input type="text" className="form-control border-start-0" placeholder="Search by patient name..." value={search} onChange={e => setSearch(e.target.value)} />
               </div>
             </div>
             <div className="col-md-3">
               <div className="input-group">
-                <span className="input-group-text bg-light border-end-0"><Filter size={16} className="text-muted" /></span>
-                <select className="form-select bg-light border-start-0" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+                <span className="input-group-text border-end-0"><Filter size={16} className="text-muted" /></span>
+                <select className="form-select border-start-0" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
                   <option value="">All Status</option>
                   <option value="Scheduled">Scheduled</option>
                   <option value="Completed">Completed</option>

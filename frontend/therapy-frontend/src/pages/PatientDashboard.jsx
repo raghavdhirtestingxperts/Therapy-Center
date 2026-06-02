@@ -230,7 +230,7 @@ const PatientDashboard = () => {
           <button className="btn btn-outline-primary rounded-pill px-3 btn-sm d-flex align-items-center gap-1" onClick={() => setShowAddChild(true)}>
             <UserPlus size={14} /> Add Child
           </button>
-          <div className="nav nav-pills p-1 rounded-pill shadow-sm" style={{ background: 'white' }}>
+          <div className="nav nav-pills p-1 rounded-pill shadow-sm">
             {[
               { key: 'appointments', label: 'Sessions' },
               { key: 'reports', label: 'Reports' },
@@ -293,7 +293,7 @@ const PatientDashboard = () => {
                         <small className="text-muted">{new Date(f.createdAt).toLocaleDateString()}</small>
                       </div>
                       <p className="small text-muted mb-3">Dr. {f.appointment?.doctor?.user?.firstName} {f.appointment?.doctor?.user?.lastName}</p>
-                      <div className="bg-light p-3 rounded-3 mb-3">
+                      <div className="obs-box mb-3">
                         <div className="fw-bold small mb-1">Observations:</div>
                         <p className="small mb-0">{f.observations}</p>
                       </div>
@@ -411,7 +411,7 @@ const PatientDashboard = () => {
                       <td>{p.appointment?.therapy?.name}</td>
                       <td>{p.appointment?.patient?.firstName} {p.appointment?.patient?.lastName}</td>
                       <td className="fw-bold">₹{p.amount}</td>
-                      <td><span className="badge bg-light text-dark">{p.paymentMethod}</span></td>
+                      <td><span className="badge bg-secondary-subtle">{p.paymentMethod}</span></td>
                       <td><span className={`badge rounded-pill status-${p.status?.toLowerCase()}`}>{p.status}</span></td>
                     </tr>
                   ))}

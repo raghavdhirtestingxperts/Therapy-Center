@@ -5,6 +5,7 @@ namespace TherapyCenterAPI.Repositories;
 public interface IUserRepository
 {
     Task<User?> GetByEmailAndPasswordAsync(string email, string password);
+    Task<User?> GetByEmailAsync(string email);
     Task<bool> EmailExistsAsync(string email);
     Task<IEnumerable<User>> GetAllAsync(string? role = null);
     Task<User?> GetByIdAsync(int id);
