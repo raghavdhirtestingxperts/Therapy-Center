@@ -89,15 +89,3 @@ public class RazorpayVerifyRequest
     public string RazorpaySignature { get; set; } = string.Empty;
 }
 
-// ─── MFA DTOs ───
-public class VerifyOtpRequest
-{
-    public string MfaSessionId { get; set; } = string.Empty;
-    public string Otp { get; set; } = string.Empty;
-}
-
-public class ResendOtpRequest
-{
-    public string MfaSessionId { get; set; } = string.Empty;
-}
-

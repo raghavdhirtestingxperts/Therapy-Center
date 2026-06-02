@@ -17,14 +17,12 @@ public class AuthController : ControllerBase
     private readonly IAuthService _authService;
     private readonly IConfiguration _configuration;
     private readonly IUserRepository _userRepository;
-    private readonly IOtpService _otpService;
 
-    public AuthController(IAuthService authService, IConfiguration configuration, IUserRepository userRepository, IOtpService otpService)
+    public AuthController(IAuthService authService, IConfiguration configuration, IUserRepository userRepository)
     {
         _authService = authService;
         _configuration = configuration;
         _userRepository = userRepository;
-        _otpService = otpService;
     }
 
     [HttpPost("login")]
@@ -34,42 +32,8 @@ public class AuthController : ControllerBase
         if (user == null)
             return Unauthorized("Invalid credentials or inactive account.");
 
-        var mfaSessionId = await _otpService.GenerateOtpAsync(user.Email);
-        return Ok(new { mfaRequired = true, mfaSessionId });
-    }
-
-    [HttpPost("verify-otp")]
-    public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest request)
-    {
-        var isValid = await _otpService.VerifyOtpAsync(request.MfaSessionId, request.Otp);
-        if (!isValid)
-            return BadRequest("Invalid or expired verification code.");
-
-        var email = await _otpService.GetEmailForSessionAsync(request.MfaSessionId);
-        if (email == null)
-            return BadRequest("Session expired. Please log in again.");
-
-        var user = await _userRepository.GetByEmailAsync(email);
-        if (user == null || !user.IsActive)
-            return Unauthorized("User not found or inactive.");
-
-        await _otpService.ClearSessionAsync(request.MfaSessionId);
-
         var token = GenerateJwtToken(user);
         return Ok(new { token, role = user.Role, userId = user.UserId, firstName = user.FirstName, lastName = user.LastName });
-    }
-
-    [HttpPost("resend-otp")]
-    public async Task<IActionResult> ResendOtp([FromBody] ResendOtpRequest request)
-    {
-        var email = await _otpService.GetEmailForSessionAsync(request.MfaSessionId);
-        if (email == null)
-            return BadRequest("Session expired. Please log in again.");
-
-        await _otpService.ClearSessionAsync(request.MfaSessionId);
-
-        var newMfaSessionId = await _otpService.GenerateOtpAsync(email);
-        return Ok(new { mfaSessionId = newMfaSessionId });
     }
 
     [Authorize]

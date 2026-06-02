@@ -72,9 +72,6 @@ builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<IPatientService, PatientService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IDoctorService, DoctorService>();
-builder.Services.AddMemoryCache();
-builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<IOtpService, OtpService>();
 
 var app = builder.Build();
 
