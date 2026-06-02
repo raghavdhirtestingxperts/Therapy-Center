@@ -9,21 +9,12 @@ public static class DataSeeder
     {
         await context.Database.MigrateAsync();
 
-        // Safely set your email as an Admin in the database (promoting it if it already exists, or renaming the default admin)
-        var existingRealUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "raghavdhir1510@gmail.com");
-        if (existingRealUser != null)
+        // Revert your email back to its original Guardian role if it was promoted to Admin
+        var userToDemote = await context.Users.FirstOrDefaultAsync(u => u.Email == "raghavdhir1510@gmail.com");
+        if (userToDemote != null && userToDemote.Role == "Admin")
         {
-            existingRealUser.Role = "Admin";
+            userToDemote.Role = "Guardian";
             await context.SaveChangesAsync();
-        }
-        else
-        {
-            var adminUser = await context.Users.FirstOrDefaultAsync(u => u.Email == "admin@therapycenter.com");
-            if (adminUser != null)
-            {
-                adminUser.Email = "raghavdhir1510@gmail.com";
-                await context.SaveChangesAsync();
-            }
         }
 
         if (await context.Users.AnyAsync())
