@@ -33,6 +33,13 @@ A comprehensive Full-Stack Management Solution for therapy centers specializing 
 - **Persistent Navbar Greeting**: Shows a personalized welcome in the global navigation bar next to the role badge.
 - **Session Profile Recovery**: Powered by a secure `/api/auth/profile` backend endpoint that restores user names on page refresh.
 
+### 🔒 Security & Session Management
+- **Idle Auto-Logout**: Users are automatically signed out after **15 minutes of inactivity** (no mouse movement, clicks, scrolling, or keystrokes) — aligned with HIPAA guidelines for healthcare applications.
+- **JWT Token Expiry**: Access tokens expire after **8 hours** (one full work shift), reducing the risk window if a token is ever compromised.
+- **Page-Load Token Validation**: On every page load or browser refresh, the stored JWT is decoded and its expiry is checked. If expired, the "Session Expired" modal is shown immediately — no silent failures.
+- **Global 401 Interceptor**: A global Axios response interceptor catches any `401 Unauthorized` response from any API call across the entire app and automatically triggers the session expiry flow.
+- **Session Expired Modal**: A styled, accessible modal informs users when their session has ended and guides them back to the login page.
+
 ---
 
 ## 🛠 Tech Stack
@@ -126,14 +133,28 @@ To run actual test-mode transactions using the official Razorpay Checkout interf
 
 ---
 
-## 🔑 Demo Credentials
+## 📋 Changelog
 
-| Role | Email | Password |
-|---|---|---|
-| **Admin** | `admin@therapycenter.com` | `admin123` |
-| **Receptionist** | `reception@therapycenter.com` | `pass123` |
-| **Doctor** | `doctor@therapycenter.com` | `pass123` |
-| **Guardian** | `guardian@therapycenter.com` | `pass123` |
+### Latest Updates
+
+#### 🔒 Session Expiry & Security Hardening
+- Added `isTokenExpired()` JWT decoder to validate stored tokens on page load.
+- Introduced a global Axios 401 interceptor — any expired/invalid token triggers auto-logout from anywhere in the app.
+- Idle session timeout set to **15 minutes** (HIPAA-aligned).
+- JWT token lifetime reduced from 24 hours to **8 hours** (one work shift).
+- Removed hardcoded demo credential hints from the login page UI.
+
+#### 🌗 Light/Dark Theme System
+- System-wide theme toggle persisted via `localStorage`.
+- CSS custom properties (`--bg`, `--text`, `--primary`, etc.) for consistent theming.
+
+#### 👋 Dynamic Greetings
+- Time-based greetings (Good Morning/Afternoon/Evening) displayed on all role dashboards and the navbar.
+- User name is recovered from `/api/auth/profile` on page refresh.
+
+#### 💳 Razorpay Payment Integration
+- Full Razorpay payment gateway with auto-detection of sandbox vs. mock mode.
+- HMAC-SHA256 signature verification on the backend before saving transactions.
 
 ---
 
