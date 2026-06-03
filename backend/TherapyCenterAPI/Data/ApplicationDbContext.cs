@@ -18,6 +18,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<DoctorFinding> DoctorFindings { get; set; }
     public DbSet<Payment> Payments { get; set; }
     public DbSet<Slot> Slots { get; set; }
+    public DbSet<LoginHistory> LoginHistories { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -57,5 +58,12 @@ public class ApplicationDbContext : DbContext
             .WithMany()
             .HasForeignKey(a => a.TherapyId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // LoginHistory → Users (optional FK, keep history if user deleted)
+        modelBuilder.Entity<LoginHistory>()
+            .HasOne(h => h.User)
+            .WithMany()
+            .HasForeignKey(h => h.UserId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

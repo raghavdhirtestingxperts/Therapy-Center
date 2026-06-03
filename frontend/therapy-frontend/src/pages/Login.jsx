@@ -9,6 +9,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [lockoutMsg, setLockoutMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -17,13 +18,18 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setLockoutMsg('');
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/login`, { email, password });
       // login() writes to both React state and localStorage atomically
       login(response.data);
       navigate(`/${response.data.role.toLowerCase()}`);
     } catch (err) {
-      setError(err.response?.data || 'Invalid email or password. Please try again.');
+      if (err.response?.status === 423) {
+        setLockoutMsg(err.response.data || 'Account temporarily locked. Please try again later.');
+      } else {
+        setError(err.response?.data || 'Invalid email or password. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -46,6 +52,12 @@ const Login = () => {
 
         <div className="card shadow-sm border-0" style={{ borderRadius: 'var(--radius-lg)' }}>
           <div className="card-body p-4 p-md-5">
+            {lockoutMsg && (
+              <div className="alert rounded-3 small d-flex align-items-start gap-2" style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', color: '#b45309' }}>
+                <span style={{ fontSize: '1rem' }}>🔒</span>
+                <span>{lockoutMsg}</span>
+              </div>
+            )}
             {error && (
               <div className="alert alert-danger rounded-3 small">{error}</div>
             )}

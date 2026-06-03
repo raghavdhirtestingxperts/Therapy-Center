@@ -11,4 +11,8 @@ public class User
     public string? PhoneNumber { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public bool IsActive { get; set; } = true;
+
+    // ─── Account Lockout ───
+    public int FailedLoginAttempts { get; set; } = 0;
+    public DateTime? LockoutUntil { get; set; }
 }

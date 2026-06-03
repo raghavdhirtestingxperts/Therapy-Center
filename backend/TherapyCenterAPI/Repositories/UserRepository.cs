@@ -55,4 +55,19 @@ public class UserRepository : IUserRepository
         await _context.SaveChangesAsync();
         return user;
     }
+
+    public async Task AddLoginHistoryAsync(LoginHistory history)
+    {
+        _context.LoginHistories.Add(history);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<IEnumerable<LoginHistory>> GetLoginHistoryAsync(int userId, int count = 10)
+    {
+        return await _context.LoginHistories
+            .Where(h => h.UserId == userId)
+            .OrderByDescending(h => h.AttemptedAt)
+            .Take(count)
+            .ToListAsync();
+    }
 }
