@@ -105,12 +105,6 @@ const Login = () => {
             </form>
           </div>
         </div>
-
-        <div className="text-center mt-4">
-          <p className="small" style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-            Demo: admin@therapycenter.com / admin123
-          </p>
-        </div>
       </div>
     </div>
   );
