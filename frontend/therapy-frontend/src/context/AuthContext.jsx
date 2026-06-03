@@ -2,6 +2,18 @@ import { createContext, useContext, useState, useEffect, useRef, useCallback } f
 import axios from 'axios';
 import API_BASE_URL from '../apiConfig';
 
+// ─── Helper: check if a JWT token string is expired ──────────────────────────
+function isTokenExpired(token) {
+  if (!token) return true;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    // exp is in seconds; Date.now() is ms
+    return payload.exp * 1000 < Date.now();
+  } catch {
+    return true;
+  }
+}
+
 const AuthContext = createContext(null);
 
 // ─── Session timeout config ───────────────────────────────────────────────────
@@ -134,8 +146,32 @@ export function AuthProvider({ children }) {
     }
   }, [auth.token, auth.firstName, logout]);
 
+  // ── Check stored JWT expiry on page load ────────────────────────────────────
+  useEffect(() => {
+    if (auth.token && isTokenExpired(auth.token)) {
+      expireSession();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Global axios interceptor: catch 401 from any API call ────────────────────
+  useEffect(() => {
+    const interceptorId = axios.interceptors.response.use(
+      response => response,
+      error => {
+        if (error.response?.status === 401) {
+          // Only fire if we actually have a token (avoid loop on login page)
+          if (localStorage.getItem('token')) {
+            expireSession();
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+    return () => axios.interceptors.response.eject(interceptorId);
+  }, [expireSession]);
+
   return (
-    <AuthContext.Provider value={{ auth, login, logout }}>
+    <AuthContext.Provider value={{ auth, login, logout, expireSession }}>
       {children}
       {sessionExpired && <SessionExpiredModal onDismiss={() => setSessionExpired(false)} />}
     </AuthContext.Provider>
