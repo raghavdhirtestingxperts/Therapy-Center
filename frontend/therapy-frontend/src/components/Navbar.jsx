@@ -54,6 +54,10 @@ const Navbar = () => {
       setPwError('New password must be at least 6 characters.');
       return;
     }
+    if (pwForm.next === pwForm.current) {
+      setPwError('New password must be different from your current password.');
+      return;
+    }
 
     setPwLoading(true);
     try {
@@ -90,7 +94,7 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="navbar navbar-expand-lg navbar-dark mb-0">
+      <nav className="navbar navbar-expand-lg navbar-dark mb-0 fixed-top" style={{ zIndex: 1040 }}>
         <div className="container">
           {/* Brand */}
           <Link className="navbar-brand fw-bold d-flex align-items-center gap-2" to="/">
@@ -136,52 +140,62 @@ const Navbar = () => {
                 <div className="position-relative">
                   <button
                     id="user-menu-btn"
-                    className="btn btn-sm d-flex align-items-center gap-1 px-3 rounded-pill"
-                    style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none' }}
+                    className="btn btn-sm d-flex align-items-center gap-2 px-3 rounded-pill"
+                    style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.25)', fontWeight: 500, fontSize: '0.85rem', letterSpacing: '0.01em' }}
                     onClick={() => setMenuOpen(o => !o)}
                     aria-expanded={menuOpen}
                     aria-haspopup="true"
                   >
-                    <ChevronDown size={14} />
+                    <span className="d-none d-sm-inline">Settings</span>
+                    <ChevronDown size={13} style={{ transition: 'transform 0.2s', transform: menuOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
                   </button>
 
                   {menuOpen && (
                     <>
-                      {/* Backdrop */}
+                      {/* Invisible full-screen backdrop to close on outside click */}
                       <div
-                        style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+                        style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
                         onClick={() => setMenuOpen(false)}
                       />
-                      {/* Dropdown */}
+                      {/* Dropdown — high z-index + blur so it floats above ALL content */}
                       <div
                         style={{
-                          position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-                          background: 'var(--card-bg)', border: '1px solid var(--border)',
-                          borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-                          minWidth: 200, zIndex: 1000, overflow: 'hidden'
+                          position: 'absolute', top: 'calc(100% + 10px)', right: 0,
+                          background: '#ffffff',
+                          border: '1px solid rgba(0,0,0,0.10)',
+                          borderRadius: 14,
+                          boxShadow: '0 16px 48px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.10)',
+                          minWidth: 210, zIndex: 9999, overflow: 'hidden',
+                          color: '#111'
                         }}
                       >
                         <button
                           id="change-password-btn"
-                          className="dropdown-item d-flex align-items-center gap-2 px-4 py-3"
-                          style={{ color: 'var(--text-primary)', background: 'none', border: 'none', width: '100%', cursor: 'pointer', fontSize: '0.9rem' }}
+                          className="d-flex align-items-center gap-2 px-4 py-3"
+                          style={{ color: '#1a1a2e', background: 'none', border: 'none', width: '100%', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500, transition: 'background 0.15s' }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.08)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'none'}
                           onClick={openChangePw}
                         >
-                          <Key size={15} /> Change Password
+                          <Key size={15} color="#6366f1" /> Change Password
                         </button>
                         <button
                           id="login-history-btn"
-                          className="dropdown-item d-flex align-items-center gap-2 px-4 py-3"
-                          style={{ color: 'var(--text-primary)', background: 'none', border: 'none', width: '100%', cursor: 'pointer', fontSize: '0.9rem' }}
+                          className="d-flex align-items-center gap-2 px-4 py-3"
+                          style={{ color: '#1a1a2e', background: 'none', border: 'none', width: '100%', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500, transition: 'background 0.15s' }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.08)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'none'}
                           onClick={openHistory}
                         >
-                          <History size={15} /> Login History
+                          <History size={15} color="#14b8a6" /> Login History
                         </button>
-                        <hr style={{ margin: '4px 16px', borderColor: 'var(--border)' }} />
+                        <hr style={{ margin: '4px 16px', borderColor: 'rgba(0,0,0,0.08)' }} />
                         <button
                           id="logout-btn"
-                          className="dropdown-item d-flex align-items-center gap-2 px-4 py-3"
-                          style={{ color: '#ef4444', background: 'none', border: 'none', width: '100%', cursor: 'pointer', fontSize: '0.9rem' }}
+                          className="d-flex align-items-center gap-2 px-4 py-3"
+                          style={{ color: '#ef4444', background: 'none', border: 'none', width: '100%', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500, transition: 'background 0.15s' }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'none'}
                           onClick={handleLogout}
                         >
                           <LogOut size={15} /> Logout
@@ -315,7 +329,11 @@ const Navbar = () => {
               </div>
 
               <div className="modal-body px-4 pt-3 pb-4">
-                <p className="small text-muted mb-3">Your last 10 login attempts</p>
+                <p className="small text-muted mb-3">
+                  {history.length === 0
+                    ? 'No login records found.'
+                    : `Showing your last ${history.length} login ${history.length === 1 ? 'attempt' : 'attempts'}`}
+                </p>
 
                 {historyLoading ? (
                   <div className="text-center py-4">

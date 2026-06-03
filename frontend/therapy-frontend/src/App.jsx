@@ -17,7 +17,7 @@ function AppRoutes() {
     <Router>
       <div className="App" style={{ minHeight: '100vh', backgroundColor: 'var(--bg)' }}>
         <Navbar />
-        <div className="container mt-4 pb-5">
+        <div className="container mt-4 pb-5" style={{ paddingTop: '70px' }}>
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route

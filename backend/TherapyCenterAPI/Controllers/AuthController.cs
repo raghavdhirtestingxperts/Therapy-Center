@@ -54,8 +54,14 @@ public class AuthController : ControllerBase
         // 2. Check if account is currently locked
         if (user.LockoutUntil.HasValue && user.LockoutUntil.Value > DateTime.UtcNow)
         {
-            var remaining = (int)Math.Ceiling((user.LockoutUntil.Value - DateTime.UtcNow).TotalMinutes);
-            return StatusCode(423, $"Account locked due to too many failed attempts. Try again in {remaining} minute(s).");
+            // Force UTC Kind before serializing — Pomelo reads DateTime as Unspecified
+            // which causes ToString("o") to omit "Z", making clients misparse as local time
+            var lockoutUtc = DateTime.SpecifyKind(user.LockoutUntil.Value, DateTimeKind.Utc);
+            return StatusCode(423, new
+            {
+                message = "Account locked due to too many failed attempts.",
+                lockoutUntil = lockoutUtc.ToString("o")
+            });
         }
 
         // 3. Verify password (supports both legacy plain-text and BCrypt hashes)
@@ -78,7 +84,14 @@ public class AuthController : ControllerBase
             });
 
             if (user.LockoutUntil.HasValue)
-                return StatusCode(423, $"Account locked after {MaxFailedAttempts} failed attempts. Try again in {LockoutMinutes} minute(s).");
+            {
+                var lockoutUtc = DateTime.SpecifyKind(user.LockoutUntil.Value, DateTimeKind.Utc);
+                return StatusCode(423, new
+                {
+                    message = $"Account locked after {MaxFailedAttempts} failed attempts.",
+                    lockoutUntil = lockoutUtc.ToString("o")
+                });
+            }
 
             int attemptsLeft = MaxFailedAttempts - user.FailedLoginAttempts;
             return Unauthorized($"Invalid credentials. {attemptsLeft} attempt(s) remaining before lockout.");
@@ -153,6 +166,10 @@ public class AuthController : ControllerBase
         // Verify current password
         if (!VerifyPassword(request.CurrentPassword, user.PasswordHash))
             return BadRequest("Current password is incorrect.");
+
+        // Reject if new password is identical to the current one
+        if (VerifyPassword(request.NewPassword, user.PasswordHash))
+            return BadRequest("New password must be different from your current password.");
 
         // Update to BCrypt hash
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
