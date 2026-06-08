@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
-import API_BASE_URL from '../apiConfig';
 import { Calendar, Search, Clock, XCircle, UserPlus, CreditCard, Filter } from 'lucide-react';
 import { useAuth, getGreeting } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import api from '../api';
 
 const ReceptionistView = () => {
   const { auth } = useAuth();
+  const { addToast } = useToast();
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
   const [doctors, setDoctors] = useState([]);
@@ -14,77 +15,110 @@ const ReceptionistView = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [showModal, setShowModal] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [newBooking, setNewBooking] = useState({ patientId: '', doctorId: '', therapyId: '', appointmentDate: '', slotId: null, startTime: '', endTime: '' });
   const [newPatient, setNewPatient] = useState({ firstName: '', lastName: '', dateOfBirth: '', gender: 'Male', medicalHistory: '' });
-  const token = localStorage.getItem('token');
-  const config = { headers: { Authorization: `Bearer ${token}` } };
 
   const fmt = (ts) => ts ? ts.substring(0, 5) : '';
 
   const fetchData = async () => {
+    setLoading(true);
     try {
       const [a, p, d, t] = await Promise.all([
-        axios.get(`${API_BASE_URL}/appointment`, config),
-        axios.get(`${API_BASE_URL}/appointment/patients`, config),
-        axios.get(`${API_BASE_URL}/appointment/doctors`, config),
-        axios.get(`${API_BASE_URL}/appointment/therapies`, config)
+        api.get('/appointment'),
+        api.get('/appointment/patients'),
+        api.get('/appointment/doctors'),
+        api.get('/appointment/therapies')
       ]);
-      setAppointments(a.data); setPatients(p.data); setDoctors(d.data); setTherapies(t.data);
-    } catch (err) { console.error(err); }
+      setAppointments(a.data);
+      setPatients(p.data);
+      setDoctors(d.data);
+      setTherapies(t.data);
+    } catch (err) {
+      console.error(err);
+      addToast('Failed to fetch receptionist dashboard data.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   useEffect(() => {
     if (newBooking.doctorId && newBooking.appointmentDate) {
-      axios.get(`${API_BASE_URL}/appointment/slots?doctorId=${newBooking.doctorId}&date=${newBooking.appointmentDate}`, config)
-        .then(res => setSlots(res.data)).catch(() => setSlots([]));
-    } else { setSlots([]); }
+      api.get(`/appointment/slots?doctorId=${newBooking.doctorId}&date=${newBooking.appointmentDate}`)
+        .then(res => setSlots(res.data))
+        .catch(() => {
+          setSlots([]);
+          addToast('Failed to load slots.', 'error');
+        });
+    } else {
+      setSlots([]);
+    }
   }, [newBooking.doctorId, newBooking.appointmentDate]);
 
   const handleBook = async (e) => {
     e.preventDefault();
     const selectedSlot = slots.find(s => s.slotId === newBooking.slotId);
-    if (!selectedSlot) { alert('Please select a time slot'); return; }
+    if (!selectedSlot) {
+      addToast('Please select a time slot', 'error');
+      return;
+    }
     try {
-      await axios.post(`${API_BASE_URL}/appointment/book`, {
+      await api.post('/appointment/book', {
         patientId: parseInt(newBooking.patientId),
         doctorId: parseInt(newBooking.doctorId),
         therapyId: parseInt(newBooking.therapyId),
         appointmentDate: newBooking.appointmentDate,
         startTime: selectedSlot.startTime,
         endTime: selectedSlot.endTime
-      }, config);
-      alert('Appointment booked!');
-      setShowModal(null); setNewBooking({ patientId: '', doctorId: '', therapyId: '', appointmentDate: '', slotId: null, startTime: '', endTime: '' });
+      });
+      addToast('Appointment booked successfully!', 'success');
+      setShowModal(null);
+      setNewBooking({ patientId: '', doctorId: '', therapyId: '', appointmentDate: '', slotId: null, startTime: '', endTime: '' });
       fetchData();
-    } catch (err) { alert(err.response?.data || 'Booking failed'); }
+    } catch (err) {
+      addToast(err.response?.data || 'Booking failed', 'error');
+    }
   };
 
   const handleCancel = async (id) => {
-    if (window.confirm('Cancel this appointment?')) {
-      try { await axios.put(`${API_BASE_URL}/appointment/${id}/cancel`, {}, config); fetchData(); }
-      catch (err) { alert('Error cancelling'); }
+    if (window.confirm('Are you sure you want to cancel this appointment?')) {
+      try {
+        await api.put(`/appointment/${id}/cancel`);
+        addToast('Appointment cancelled successfully.', 'success');
+        fetchData();
+      } catch (err) {
+        addToast('Error cancelling appointment.', 'error');
+      }
     }
   };
 
   const handlePay = async (appointmentId) => {
-    if (window.confirm('Mark as paid (Cash)?')) {
+    if (window.confirm('Mark this appointment as paid via Cash?')) {
       try {
-        await axios.post(`${API_BASE_URL}/payment/pay`, { appointmentId, paymentMethod: 'Cash' }, config);
-        alert('Payment recorded!'); fetchData();
-      } catch (err) { alert(err.response?.data || 'Payment failed'); }
+        await api.post('/payment/pay', { appointmentId, paymentMethod: 'Cash' });
+        addToast('Payment recorded successfully!', 'success');
+        fetchData();
+      } catch (err) {
+        addToast(err.response?.data || 'Payment failed to record.', 'error');
+      }
     }
   };
 
   const handleAddPatient = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_BASE_URL}/patient`, newPatient, config);
-      alert('Patient added!'); setShowModal(null);
+      await api.post('/patient', newPatient);
+      addToast('New patient added successfully!', 'success');
+      setShowModal(null);
       setNewPatient({ firstName: '', lastName: '', dateOfBirth: '', gender: 'Male', medicalHistory: '' });
       fetchData();
-    } catch (err) { alert('Error adding patient'); }
+    } catch (err) {
+      addToast('Error adding new patient.', 'error');
+    }
   };
 
   const filtered = appointments.filter(a => {
@@ -138,7 +172,14 @@ const ReceptionistView = () => {
           <table className="table table-hover align-middle mb-0">
             <thead><tr><th>Patient</th><th>Doctor</th><th>Therapy</th><th>Schedule</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
-              {filtered.map(a => (
+              {loading ? (
+                <tr>
+                  <td colSpan="6" className="text-center py-5">
+                    <div className="spinner-border spinner-border-sm text-primary" role="status"></div>
+                    <p className="small text-muted mt-2">Loading appointments...</p>
+                  </td>
+                </tr>
+              ) : filtered.map(a => (
                 <tr key={a.appointmentId}>
                   <td className="fw-bold">{a.patient?.firstName} {a.patient?.lastName}</td>
                   <td>Dr. {a.doctor?.user?.firstName} {a.doctor?.user?.lastName}</td>
@@ -160,7 +201,7 @@ const ReceptionistView = () => {
                   </td>
                 </tr>
               ))}
-              {filtered.length === 0 && <tr><td colSpan="6" className="text-center py-4 text-muted">No appointments found.</td></tr>}
+              {!loading && filtered.length === 0 && <tr><td colSpan="6" className="text-center py-4 text-muted">No appointments found.</td></tr>}
             </tbody>
           </table>
         </div>

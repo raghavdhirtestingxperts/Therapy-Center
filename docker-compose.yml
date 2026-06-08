@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: therapy_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: TherapyCenterDb
+      MYSQL_ROOT_PASSWORD: 9070
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/TherapyCenterAPI/Dockerfile
+    container_name: therapy_backend
+    restart: always
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=db;Port=3306;Database=TherapyCenterDb;User=root;Password=9070;
+      - PORT=8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./frontend/therapy-frontend
+      dockerfile: Dockerfile
+    container_name: therapy_frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  db_data:

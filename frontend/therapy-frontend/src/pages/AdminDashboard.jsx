@@ -1,21 +1,25 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
-import API_BASE_URL from '../apiConfig';
+import api from '../api';
 import { Plus, Trash2, Edit, Users, Stethoscope, Calendar, BarChart3, Clock, UserPlus, RefreshCw } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
+import LoadingSpinner from '../components/LoadingSpinner';
+import DashboardCharts from '../components/DashboardCharts';
 
 const AdminDashboard = () => {
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
   const [therapies, setTherapies] = useState([]);
   const [users, setUsers] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [slots, setSlots] = useState([]);
   const [stats, setStats] = useState({});
+  const [appointments, setAppointments] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [showModal, setShowModal] = useState(null);
   const [editItem, setEditItem] = useState(null);
   const [form, setForm] = useState({});
   const [slotFilter, setSlotFilter] = useState({ doctorId: '', date: '' });
-  const token = localStorage.getItem('token');
-  const config = { headers: { Authorization: `Bearer ${token}` } };
+  const [loading, setLoading] = useState(true);
 
   const getTodayString = () => {
     const today = new Date();
@@ -27,22 +31,27 @@ const AdminDashboard = () => {
 
   const fetchAll = async () => {
     try {
-      const [t, u, d, s] = await Promise.all([
-        axios.get(`${API_BASE_URL}/admin/therapies`, config),
-        axios.get(`${API_BASE_URL}/admin/users`, config),
-        axios.get(`${API_BASE_URL}/admin/doctors`, config),
-        axios.get(`${API_BASE_URL}/admin/dashboard-stats`, config)
+      setLoading(true);
+      const [t, u, d, s, a, p] = await Promise.all([
+        api.get('/admin/therapies'),
+        api.get('/admin/users'),
+        api.get('/admin/doctors'),
+        api.get('/admin/dashboard-stats'),
+        api.get('/appointment').catch(() => ({ data: [] })),
+        api.get('/payment/history').catch(() => ({ data: [] }))
       ]);
       setTherapies(t.data); setUsers(u.data); setDoctors(d.data); setStats(s.data);
+      setAppointments(a.data); setPayments(p.data);
     } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   };
 
   const fetchSlots = async () => {
     try {
-      let url = `${API_BASE_URL}/admin/slots?`;
+      let url = '/admin/slots?';
       if (slotFilter.doctorId) url += `doctorId=${slotFilter.doctorId}&`;
       if (slotFilter.date) url += `date=${slotFilter.date}`;
-      const res = await axios.get(url, config);
+      const res = await api.get(url);
       setSlots(res.data);
     } catch (err) { console.error(err); }
   };
@@ -52,22 +61,24 @@ const AdminDashboard = () => {
 
   const fmt = (ts) => ts ? ts.substring(0, 5) : '';
 
-  // ─── CRUD Handlers ───
+  // CRUD handlers
   const handleSaveTherapy = async (e) => {
     e.preventDefault();
     try {
       if (editItem) {
-        await axios.put(`${API_BASE_URL}/admin/therapies/${editItem.therapyId}`, { ...form, therapyId: editItem.therapyId }, config);
+        await api.put(`/admin/therapies/${editItem.therapyId}`, { ...form, therapyId: editItem.therapyId });
       } else {
-        await axios.post(`${API_BASE_URL}/admin/therapies`, form, config);
+        await api.post('/admin/therapies', form);
       }
       setShowModal(null); setEditItem(null); setForm({}); fetchAll();
-    } catch (err) { alert('Error saving therapy'); }
+      showToast(editItem ? 'Therapy updated' : 'Therapy created');
+    } catch (err) { showToast('Error saving therapy', 'error'); }
   };
 
   const handleDeleteTherapy = async (id) => {
     if (window.confirm('Delete this therapy?')) {
-      await axios.delete(`${API_BASE_URL}/admin/therapies/${id}`, config); fetchAll();
+      await api.delete(`/admin/therapies/${id}`); fetchAll();
+      showToast('Therapy deleted');
     }
   };
 
@@ -75,41 +86,44 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       if (editItem) {
-        await axios.put(`${API_BASE_URL}/admin/users/${editItem.userId}`, form, config);
+        await api.put(`/admin/users/${editItem.userId}`, form);
       } else {
-        await axios.post(`${API_BASE_URL}/admin/users`, { ...form, role: 'Receptionist' }, config);
+        await api.post('/admin/users', { ...form, role: 'Receptionist' });
       }
       setShowModal(null); setEditItem(null); setForm({}); fetchAll();
-    } catch (err) { alert(err.response?.data || 'Error saving staff'); }
+      showToast(editItem ? 'Staff updated' : 'Staff created');
+    } catch (err) { showToast(err.response?.data || 'Error saving staff', 'error'); }
   };
 
   const handleToggleUser = async (id) => {
-    await axios.delete(`${API_BASE_URL}/admin/users/${id}`, config); fetchAll();
+    await api.delete(`/admin/users/${id}`); fetchAll();
+    showToast('User status updated');
   };
 
   const handleSaveDoctor = async (e) => {
     e.preventDefault();
     try {
       if (editItem) {
-        await axios.put(`${API_BASE_URL}/admin/doctors/${editItem.doctorId}`, form, config);
+        await api.put(`/admin/doctors/${editItem.doctorId}`, form);
       } else {
-        await axios.post(`${API_BASE_URL}/admin/doctors`, form, config);
+        await api.post('/admin/doctors', form);
       }
       setShowModal(null); setEditItem(null); setForm({}); fetchAll();
-    } catch (err) { alert(err.response?.data || 'Error saving doctor'); }
+      showToast(editItem ? 'Doctor updated' : 'Doctor created');
+    } catch (err) { showToast(err.response?.data || 'Error saving doctor', 'error'); }
   };
 
   const handleGenerateSlots = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post(`${API_BASE_URL}/admin/slots/generate`, form, config);
-      alert(res.data.message); setShowModal(null); setForm({}); fetchSlots();
-    } catch (err) { alert('Error generating slots'); }
+      const res = await api.post('/admin/slots/generate', form);
+      showToast(res.data.message); setShowModal(null); setForm({}); fetchSlots();
+    } catch (err) { showToast('Error generating slots', 'error'); }
   };
 
   const handleDeleteSlot = async (id) => {
-    try { await axios.delete(`${API_BASE_URL}/admin/slots/${id}`, config); fetchSlots(); }
-    catch (err) { alert(err.response?.data || 'Cannot delete booked slot'); }
+    try { await api.delete(`/admin/slots/${id}`); fetchSlots(); showToast('Slot deleted'); }
+    catch (err) { showToast(err.response?.data || 'Cannot delete booked slot', 'error'); }
   };
 
   const openEdit = (type, item) => {
@@ -132,6 +146,8 @@ const AdminDashboard = () => {
     { key: 'slots', label: 'Slots', icon: <Calendar size={16} /> }
   ];
 
+  if (loading) return <LoadingSpinner message="Loading admin dashboard..." />;
+
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
@@ -146,30 +162,34 @@ const AdminDashboard = () => {
       </div>
 
       <div className="tab-content-area">
-        {/* ─── Overview ─── */}
+        {/* Overview */}
         {activeTab === 'overview' && (
-          <div className="row g-4">
-            {[
-              { label: 'Total Patients', value: stats.totalPatients, color: '#6366f1', bg: 'rgba(99,102,241,0.08)' },
-              { label: 'Total Doctors', value: stats.totalDoctors, color: '#14b8a6', bg: 'rgba(20,184,166,0.08)' },
-              { label: "Today's Sessions", value: stats.todaysAppointments, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
-              { label: 'Total Revenue', value: `₹${stats.totalRevenue || 0}`, color: '#22c55e', bg: 'rgba(34,197,94,0.08)' },
-              { label: 'Scheduled', value: stats.scheduledAppointments, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
-              { label: 'Completed', value: stats.completedAppointments, color: '#22c55e', bg: 'rgba(34,197,94,0.08)' },
-              { label: 'Therapies', value: stats.totalTherapies, color: '#ec4899', bg: 'rgba(236,72,153,0.08)' },
-              { label: 'All Appointments', value: stats.totalAppointments, color: '#8b5cf6', bg: 'rgba(139,92,246,0.08)' }
-            ].map((s, i) => (
-              <div className="col-md-3 col-6" key={i}>
-                <div className="stat-card" style={{ background: s.bg }}>
-                  <div className="small fw-semibold mb-2" style={{ color: s.color }}>{s.label}</div>
-                  <div className="fw-bold" style={{ fontSize: '1.75rem', color: s.color }}>{s.value ?? 0}</div>
+          <>
+            <div className="row g-4">
+              {[
+                { label: 'Total Patients', value: stats.totalPatients, color: '#6366f1', bg: 'rgba(99,102,241,0.08)' },
+                { label: 'Total Doctors', value: stats.totalDoctors, color: '#14b8a6', bg: 'rgba(20,184,166,0.08)' },
+                { label: "Today's Sessions", value: stats.todaysAppointments, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
+                { label: 'Total Revenue', value: `₹${stats.totalRevenue || 0}`, color: '#22c55e', bg: 'rgba(34,197,94,0.08)' },
+                { label: 'Scheduled', value: stats.scheduledAppointments, color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
+                { label: 'Completed', value: stats.completedAppointments, color: '#22c55e', bg: 'rgba(34,197,94,0.08)' },
+                { label: 'Therapies', value: stats.totalTherapies, color: '#ec4899', bg: 'rgba(236,72,153,0.08)' },
+                { label: 'All Appointments', value: stats.totalAppointments, color: '#8b5cf6', bg: 'rgba(139,92,246,0.08)' }
+              ].map((s, i) => (
+                <div className="col-md-3 col-6" key={i}>
+                  <div className="stat-card" style={{ background: s.bg }}>
+                    <div className="small fw-semibold mb-2" style={{ color: s.color }}>{s.label}</div>
+                    <div className="fw-bold" style={{ fontSize: '1.75rem', color: s.color }}>{s.value ?? 0}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            {/* Charts */}
+            <DashboardCharts appointments={appointments} payments={payments} therapies={therapies} />
+          </>
         )}
 
-        {/* ─── Therapies ─── */}
+        {/* Therapies */}
         {activeTab === 'therapies' && (
           <div>
             <div className="d-flex justify-content-end mb-3">
@@ -200,7 +220,7 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* ─── Staff ─── */}
+        {/* Staff */}
         {activeTab === 'staff' && (
           <div>
             <div className="d-flex justify-content-end mb-3">
@@ -234,7 +254,7 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* ─── Doctors ─── */}
+        {/* Doctors */}
         {activeTab === 'doctors' && (
           <div>
             <div className="d-flex justify-content-end mb-3">
@@ -267,7 +287,7 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* ─── Slots ─── */}
+        {/* Slots */}
         {activeTab === 'slots' && (
           <div>
             <div className="card border-0 shadow-sm mb-4">
@@ -315,7 +335,7 @@ const AdminDashboard = () => {
         )}
       </div>
 
-      {/* ─── Modals ─── */}
+      {/* Modals */}
       {showModal && (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
           <div className="modal-dialog modal-dialog-centered">

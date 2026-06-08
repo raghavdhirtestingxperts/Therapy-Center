@@ -137,6 +137,25 @@ To run actual test-mode transactions using the official Razorpay Checkout interf
 
 ### Latest Updates
 
+#### 🚀 Features & Enhancements
+- **Dynamic Notifications**: Added a real-time `NotificationBell` with 10-second background polling to show pending payments and upcoming appointment alerts.
+- **Interactive Charts**: Integrated rich visual analytics (appointment trends and revenue breakdown) on the Admin dashboard.
+- **Doctor Read-Only Access**: Doctors can now review a patient's historical medical records and findings directly from the patient list in read-only mode.
+- **Toast Alerts**: Built a custom animated Toast notification provider and solved the `addToast` integration bug.
+- **Performance Optimization**: Implemented React `lazy()` and `Suspense` routing for faster frontend bundle loading.
+
+#### 🔧 Backend Infrastructure & Security
+- **Global Exception Middleware**: Introduced global exception logging and formatted JSON error responses.
+- **Secrets Management**: Commited an `appsettings.Template.json` and added local `appsettings.json` to `.gitignore` to prevent secret leaks.
+- **Input Validation**: Added strong validation constraints (DataAnnotations) to backend DTO requests.
+- **CORS & Rate Limiting**: Added strict CORS header restrictions and a 20 requests/min rate limiter on authentication endpoints.
+- **Refresh Tokens**: Added a secure refresh token structure for persistent user sessions.
+
+#### 🧹 Cleanup & Simplification
+- **English-Only Localization**: Removed the Spanish translations to keep the application focused entirely on English.
+- **Deprecated Forgot Password & SMTP**: Removed Email sending, SMTP service setup, and forgotten password reset flows for direct administrator-mediated account resets.
+- **Fixed PDF Reports**: Resolved the `undefined undefined` patient name bug on session report PDF downloads.
+
 #### 🔒 Session Expiry & Security Hardening
 - Added `isTokenExpired()` JWT decoder to validate stored tokens on page load.
 - Introduced a global Axios 401 interceptor — any expired/invalid token triggers auto-logout from anywhere in the app.
@@ -160,3 +179,4 @@ To run actual test-mode transactions using the official Razorpay Checkout interf
 
 ## 🛡 License
 This project is licensed under the MIT License.
+

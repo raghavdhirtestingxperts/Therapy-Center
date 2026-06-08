@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
-import API_BASE_URL from '../apiConfig';
-import { Calendar, FileText, CreditCard, ChevronRight, Clock, UserPlus, CheckCircle, AlertCircle } from 'lucide-react';
+import { Calendar, FileText, CreditCard, ChevronRight, Clock, UserPlus, CheckCircle, AlertCircle, XCircle, Download } from 'lucide-react';
 import { useAuth, getGreeting } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import api from '../api';
 
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
@@ -20,6 +20,7 @@ const loadRazorpayScript = () => {
 
 const PatientDashboard = () => {
   const { auth } = useAuth();
+  const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState('appointments');
   const [appointments, setAppointments] = useState([]);
   const [findings, setFindings] = useState([]);
@@ -33,9 +34,8 @@ const PatientDashboard = () => {
   const [showAddChild, setShowAddChild] = useState(false);
   const [newChild, setNewChild] = useState({ firstName: '', lastName: '', dateOfBirth: '', gender: 'Male', medicalHistory: '' });
   const [payingId, setPayingId] = useState(null);
+  const [cancellingId, setCancellingId] = useState(null);
 
-  const token = localStorage.getItem('token');
-  const config = { headers: { Authorization: `Bearer ${token}` } };
   const fmt = (ts) => ts ? ts.substring(0, 5) : '';
 
   const getTodayString = () => {
@@ -69,9 +69,9 @@ const PatientDashboard = () => {
   const fetchData = async () => {
     try {
       const [appRes, patientsRes, therapiesRes] = await Promise.all([
-        axios.get(`${API_BASE_URL}/appointment`, config),
-        axios.get(`${API_BASE_URL}/patient/my-patients`, config),
-        axios.get(`${API_BASE_URL}/appointment/therapies`, config)
+        api.get('/appointment'),
+        api.get('/patient/my-patients'),
+        api.get('/appointment/therapies')
       ]);
       setAppointments(appRes.data);
       setPatients(patientsRes.data);
@@ -81,7 +81,7 @@ const PatientDashboard = () => {
         const allFindings = [];
         for (const p of patientsRes.data) {
           try {
-            const f = await axios.get(`${API_BASE_URL}/patient/${p.patientId}/findings`, config);
+            const f = await api.get(`/patient/${p.patientId}/findings`);
             allFindings.push(...f.data);
           } catch {}
         }
@@ -89,50 +89,78 @@ const PatientDashboard = () => {
       }
 
       try {
-        const payRes = await axios.get(`${API_BASE_URL}/payment/history`, config);
+        const payRes = await api.get('/payment/history');
         setPayments(payRes.data);
       } catch {}
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      addToast('Failed to fetch dashboard data.', 'error');
+    }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   useEffect(() => {
     if (step === 2) {
-      axios.get(`${API_BASE_URL}/appointment/doctors`, config).then(res => setDoctors(res.data));
+      api.get('/appointment/doctors')
+        .then(res => setDoctors(res.data))
+        .catch(() => addToast('Failed to load doctors.', 'error'));
     }
   }, [step]);
 
   useEffect(() => {
     if (booking.doctorId && booking.date) {
-      axios.get(`${API_BASE_URL}/appointment/slots?doctorId=${booking.doctorId}&date=${booking.date}`, config)
-        .then(res => setSlots(res.data)).catch(() => setSlots([]));
+      api.get(`/appointment/slots?doctorId=${booking.doctorId}&date=${booking.date}`)
+        .then(res => setSlots(res.data))
+        .catch(() => {
+          setSlots([]);
+          addToast('Failed to load time slots.', 'error');
+        });
     }
   }, [booking.doctorId, booking.date]);
 
   const handleBook = async () => {
     try {
-      await axios.post(`${API_BASE_URL}/appointment/book`, {
+      await api.post('/appointment/book', {
         patientId: parseInt(booking.patientId) || 0,
         therapyId: parseInt(booking.therapyId),
         doctorId: parseInt(booking.doctorId),
         appointmentDate: booking.date,
         startTime: booking.slot.startTime,
         endTime: booking.slot.endTime
-      }, config);
-      alert('Appointment booked successfully!');
-      setStep(1); setBooking({ therapyId: '', doctorId: '', date: '', slot: null, patientId: '' }); fetchData();
-    } catch (err) { alert(err.response?.data || 'Booking failed'); }
+      });
+      addToast('Appointment booked successfully!', 'success');
+      setStep(1);
+      setBooking({ therapyId: '', doctorId: '', date: '', slot: null, patientId: '' });
+      setActiveTab('appointments');
+      fetchData();
+    } catch (err) {
+      addToast(err.response?.data || 'Booking failed', 'error');
+    }
+  };
+
+  const handleCancel = async (appointmentId) => {
+    if (!window.confirm('Are you sure you want to cancel this appointment?')) return;
+    setCancellingId(appointmentId);
+    try {
+      await api.put(`/appointment/${appointmentId}/cancel`);
+      addToast('Appointment cancelled successfully.', 'success');
+      fetchData();
+    } catch (err) {
+      addToast(err.response?.data || 'Failed to cancel appointment.', 'error');
+    } finally {
+      setCancellingId(null);
+    }
   };
 
   const handlePayment = async (appointmentId) => {
     setPayingId(appointmentId);
     try {
-      // 1. Create order on the backend
-      const res = await axios.post(`${API_BASE_URL}/payment/create-order`, { appointmentId }, config);
+      const res = await api.post('/payment/create-order', { appointmentId });
       const orderData = res.data;
 
-      // 2. Handle Mock Mode fallback
       if (orderData.mockMode) {
         const proceedWithMock = window.confirm(
           `Demo mode: No Razorpay credentials configured.\n` +
@@ -142,20 +170,19 @@ const PatientDashboard = () => {
         );
         
         if (proceedWithMock) {
-          await axios.post(`${API_BASE_URL}/payment/verify`, {
+          await api.post('/payment/verify', {
             appointmentId,
             razorpayOrderId: orderData.orderId,
             razorpayPaymentId: `pay_mock_${Date.now()}`,
             razorpaySignature: 'mock_signature_verification_skipped'
-          }, config);
-          alert('Payment Simulated Successfully!');
+          });
+          addToast('Payment Simulated Successfully!', 'success');
           fetchData();
         }
       } else {
-        // 3. Launch real Razorpay checkout modal
         const isLoaded = await loadRazorpayScript();
         if (!isLoaded) {
-          alert('Failed to load Razorpay SDK. Please check your internet connection.');
+          addToast('Failed to load Razorpay SDK. Please check your internet connection.', 'error');
           setPayingId(null);
           return;
         }
@@ -169,16 +196,16 @@ const PatientDashboard = () => {
           order_id: orderData.orderId,
           handler: async function (response) {
             try {
-              await axios.post(`${API_BASE_URL}/payment/verify`, {
+              await api.post('/payment/verify', {
                 appointmentId,
                 razorpayOrderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpaySignature: response.razorpay_signature
-              }, config);
-              alert('Payment Successful!');
+              });
+              addToast('Payment Successful!', 'success');
               fetchData();
             } catch (err) {
-              alert(err.response?.data || 'Payment verification failed.');
+              addToast(err.response?.data || 'Payment verification failed.', 'error');
             }
           },
           prefill: {
@@ -188,11 +215,6 @@ const PatientDashboard = () => {
           },
           theme: {
             color: '#6366f1'
-          },
-          modal: {
-            ondismiss: function () {
-              // Action on close
-            }
           }
         };
 
@@ -200,7 +222,7 @@ const PatientDashboard = () => {
         rzp.open();
       }
     } catch (err) {
-      alert(err.response?.data || 'Payment failed to initialize.');
+      addToast(err.response?.data || 'Payment failed to initialize.', 'error');
     } finally {
       setPayingId(null);
     }
@@ -209,10 +231,72 @@ const PatientDashboard = () => {
   const handleAddChild = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_BASE_URL}/patient`, newChild, config);
-      alert('Child profile added!'); setShowAddChild(false);
-      setNewChild({ firstName: '', lastName: '', dateOfBirth: '', gender: 'Male', medicalHistory: '' }); fetchData();
-    } catch (err) { alert('Error adding child'); }
+      await api.post('/patient', newChild);
+      addToast('Child profile added successfully!', 'success');
+      setShowAddChild(false);
+      setNewChild({ firstName: '', lastName: '', dateOfBirth: '', gender: 'Male', medicalHistory: '' });
+      fetchData();
+    } catch (err) {
+      addToast('Error adding child profile.', 'error');
+    }
+  };
+
+  const handlePrintReport = (report) => {
+    const printWindow = window.open('', '_blank');
+    const dateStr = new Date(report.createdAt).toLocaleDateString();
+    const nextDateStr = report.nextSessionDate ? new Date(report.nextSessionDate).toLocaleDateString() : '—';
+    
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Therapy Session Report - ${report.appointment?.patient?.firstName} ${report.appointment?.patient?.lastName}</title>
+          <style>
+            body { font-family: 'Inter', system-ui, sans-serif; color: #1e293b; padding: 40px; line-height: 1.5; }
+            .header { text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px; }
+            .title { font-size: 24px; font-weight: bold; color: #4f46e5; }
+            .subtitle { font-size: 14px; color: #64748b; margin-top: 5px; }
+            .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
+            .meta-item { font-size: 14px; }
+            .meta-label { font-weight: bold; color: #4f46e5; }
+            .section { margin-bottom: 25px; }
+            .section-title { font-size: 16px; font-weight: bold; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; }
+            .content-box { background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; font-size: 14px; white-space: pre-line; }
+            .footer { text-align: center; font-size: 12px; color: #94a3b8; margin-top: 50px; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="title">Special Kids Therapy Center</div>
+            <div class="subtitle">Clinical Session Progress Report</div>
+          </div>
+          <div class="meta-grid">
+            <div class="meta-item"><span class="meta-label">Patient Name:</span> ${report.appointment?.patient?.firstName} ${report.appointment?.patient?.lastName}</div>
+            <div class="meta-item"><span class="meta-label">Date of Report:</span> ${dateStr}</div>
+            <div class="meta-item"><span class="meta-label">Therapy Type:</span> ${report.appointment?.therapy?.name || 'Therapy'}</div>
+            <div class="meta-item"><span class="meta-label">Practitioner:</span> Dr. ${report.appointment?.doctor?.user?.firstName} ${report.appointment?.doctor?.user?.lastName}</div>
+            <div class="meta-item"><span class="meta-label">Next Scheduled Session:</span> ${nextDateStr}</div>
+          </div>
+          <div class="section">
+            <div class="section-title">Clinical Observations</div>
+            <div class="content-box">${report.observations}</div>
+          </div>
+          <div class="section">
+            <div class="section-title">Recommendations & Next Steps</div>
+            <div class="content-box" style="background-color: #f5f3ff; border-color: #ddd6fe;">${report.recommendations}</div>
+          </div>
+          <div class="footer">
+            This is an official document generated by Special Kids Therapy Center. &copy; ${new Date().getFullYear()} All rights reserved.
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              window.onafterprint = function() { window.close(); };
+            }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const isPaid = (appointmentId) => payments.some(p => p.appointmentId === appointmentId && p.status === 'Paid');
@@ -250,28 +334,41 @@ const PatientDashboard = () => {
             {appointments.length === 0 ? <p className="text-center py-5 text-muted">No sessions found. Book your first appointment!</p> : appointments.map(app => (
               <div className="col-md-6" key={app.appointmentId}>
                 <div className="card border-0 shadow-sm h-100">
-                  <div className="card-body p-4">
-                    <div className="d-flex justify-content-between align-items-start mb-3">
-                      <div>
-                        <h5 className="fw-bold mb-1" style={{ color: 'var(--bs-primary)' }}>{app.therapy?.name}</h5>
-                        <p className="text-muted small mb-0">Dr. {app.doctor?.user?.firstName} {app.doctor?.user?.lastName}</p>
-                        <p className="text-muted small mb-0">Patient: {app.patient?.firstName} {app.patient?.lastName}</p>
+                  <div className="card-body p-4 d-flex flex-column justify-content-between">
+                    <div>
+                      <div className="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                          <h5 className="fw-bold mb-1" style={{ color: 'var(--bs-primary)' }}>{app.therapy?.name}</h5>
+                          <p className="text-muted small mb-0">Dr. {app.doctor?.user?.firstName} {app.doctor?.user?.lastName}</p>
+                          <p className="text-muted small mb-0">Patient: {app.patient?.firstName} {app.patient?.lastName}</p>
+                        </div>
+                        <span className={`badge rounded-pill status-${app.status?.toLowerCase()}`}>{app.status}</span>
                       </div>
-                      <span className={`badge rounded-pill status-${app.status?.toLowerCase()}`}>{app.status}</span>
+                      <div className="d-flex align-items-center text-muted small mb-3">
+                        <Calendar size={14} className="me-1" /> {new Date(app.appointmentDate).toLocaleDateString()}
+                        <Clock size={14} className="ms-3 me-1" /> {fmt(app.startTime)} - {fmt(app.endTime)}
+                      </div>
                     </div>
-                    <div className="d-flex align-items-center text-muted small mb-3">
-                      <Calendar size={14} className="me-1" /> {new Date(app.appointmentDate).toLocaleDateString()}
-                      <Clock size={14} className="ms-3 me-1" /> {fmt(app.startTime)} - {fmt(app.endTime)}
-                    </div>
-                    <div className="d-flex justify-content-between align-items-center pt-3 border-top">
+                    <div className="d-flex justify-content-between align-items-center pt-3 border-top mt-3">
                       <span className="fw-bold h5 mb-0" style={{ color: 'var(--bs-primary)' }}>₹{app.therapy?.cost}</span>
-                      {isPaid(app.appointmentId) ? (
-                        <span className="badge rounded-pill status-paid px-3 py-2"><CheckCircle size={14} className="me-1" /> Paid</span>
-                      ) : app.status !== 'Cancelled' ? (
-                        <button className="btn btn-primary rounded-pill px-4 d-flex align-items-center gap-2" onClick={() => handlePayment(app.appointmentId)} disabled={payingId === app.appointmentId}>
-                          <CreditCard size={16} /> {payingId === app.appointmentId ? 'Processing...' : 'Pay Now'}
-                        </button>
-                      ) : null}
+                      <div className="d-flex gap-2">
+                        {app.status !== 'Cancelled' && app.status !== 'Completed' && (
+                          <button
+                            className="btn btn-outline-danger rounded-pill px-3 btn-sm d-flex align-items-center gap-1"
+                            onClick={() => handleCancel(app.appointmentId)}
+                            disabled={cancellingId === app.appointmentId}
+                          >
+                            <XCircle size={14} /> {cancellingId === app.appointmentId ? 'Cancelling...' : 'Cancel'}
+                          </button>
+                        )}
+                        {isPaid(app.appointmentId) ? (
+                          <span className="badge rounded-pill status-paid px-3 py-2 d-inline-flex align-items-center"><CheckCircle size={14} className="me-1" /> Paid</span>
+                        ) : app.status !== 'Cancelled' ? (
+                          <button className="btn btn-primary rounded-pill px-4 btn-sm d-flex align-items-center gap-2" onClick={() => handlePayment(app.appointmentId)} disabled={payingId === app.appointmentId}>
+                            <CreditCard size={16} /> {payingId === app.appointmentId ? 'Processing...' : 'Pay Now'}
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -290,7 +387,15 @@ const PatientDashboard = () => {
                     <div key={f.findingId} className="list-group-item p-4">
                       <div className="d-flex justify-content-between align-items-start mb-2">
                         <h6 className="fw-bold mb-0" style={{ color: 'var(--bs-primary)' }}>{f.appointment?.therapy?.name || 'Therapy'} - Session Report</h6>
-                        <small className="text-muted">{new Date(f.createdAt).toLocaleDateString()}</small>
+                        <div className="d-flex align-items-center gap-3">
+                          <small className="text-muted">{new Date(f.createdAt).toLocaleDateString()}</small>
+                          <button
+                            className="btn btn-sm btn-outline-primary rounded-pill d-flex align-items-center gap-1 py-1 px-3"
+                            onClick={() => handlePrintReport(f)}
+                          >
+                            <Download size={14} /> Download PDF
+                          </button>
+                        </div>
                       </div>
                       <p className="small text-muted mb-3">Dr. {f.appointment?.doctor?.user?.firstName} {f.appointment?.doctor?.user?.lastName}</p>
                       <div className="obs-box mb-3">

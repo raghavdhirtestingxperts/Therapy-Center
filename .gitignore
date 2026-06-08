@@ -1,8 +1,9 @@
 # Root-level .gitignore for Therapy Center monorepo
 
-# ── .NET Backend ────────────────────────────────────────────────────────────────
+# .NET Backend
 backend/TherapyCenterAPI/bin/
 backend/TherapyCenterAPI/obj/
+backend/TherapyCenterAPI/appsettings.json
 backend/TherapyCenterAPI/appsettings.Development.json
 backend/TherapyCenterAPI/*.user
 

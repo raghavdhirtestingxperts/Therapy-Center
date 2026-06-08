@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
-import { Lock, Mail, UserPlus } from 'lucide-react';
-import API_BASE_URL from '../apiConfig';
+import { Lock, Mail, UserPlus, Phone, User } from 'lucide-react';
+import api from '../api';
+import { useToast } from '../context/ToastContext';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -12,16 +12,39 @@ const Register = () => {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { addToast } = useToast();
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    setLoading(true); setError('');
+
+    // Client-side validations
+    if (!formData.firstName.trim()) {
+      setError('First name is required.');
+      addToast('First name is required.', 'error');
+      return;
+    }
+    if (!formData.lastName.trim()) {
+      setError('Last name is required.');
+      addToast('Last name is required.', 'error');
+      return;
+    }
+    if (formData.passwordHash.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      addToast('Password must be at least 6 characters long.', 'error');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
     try {
-      await axios.post(`${API_BASE_URL}/auth/register`, formData);
+      await api.post('/auth/register', formData);
       setSuccess(true);
+      addToast('Registration successful! Redirecting to login...', 'success');
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
-      setError(err.response?.data || 'Registration failed');
+      const msg = err.response?.data || 'Registration failed';
+      setError(msg);
+      addToast(msg, 'error');
     }
     setLoading(false);
   };
@@ -108,12 +131,17 @@ const Register = () => {
 
               <div className="mb-3">
                 <label className="form-label small fw-semibold">Phone Number</label>
-                <input
-                  type="text"
-                  className="form-control py-2"
-                  value={formData.phoneNumber}
-                  onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
-                />
+                <div className="input-group">
+                  <span className="input-group-text border-end-0">
+                    <Phone size={18} color="var(--text-secondary)" />
+                  </span>
+                  <input
+                    type="text"
+                    className="form-control border-start-0 py-2"
+                    value={formData.phoneNumber}
+                    onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
+                  />
+                </div>
               </div>
 
               <div className="mb-4">

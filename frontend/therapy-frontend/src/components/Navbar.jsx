@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { LogOut, Heart, Sun, Moon, Key, History, ChevronDown, CheckCircle, XCircle } from 'lucide-react';
 import { useAuth, getGreeting } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import API_BASE_URL from '../apiConfig';
+import { useToast } from '../context/ToastContext';
+import api from '../api';
+import NotificationBell from './NotificationBell';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { auth, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { addToast } = useToast();
 
   // Dropdown open state
   const [menuOpen, setMenuOpen] = useState(false);
@@ -29,10 +31,11 @@ const Navbar = () => {
   const handleLogout = () => {
     setMenuOpen(false);
     logout();
+    addToast('Logged out successfully.', 'info');
     navigate('/login');
   };
 
-  // ── Change Password ──────────────────────────────────────────────────────────
+  // Change Password
   const openChangePw = () => {
     setMenuOpen(false);
     setPwForm({ current: '', next: '', confirm: '' });
@@ -61,32 +64,33 @@ const Navbar = () => {
 
     setPwLoading(true);
     try {
-      await axios.post(
-        `${API_BASE_URL}/auth/change-password`,
-        { currentPassword: pwForm.current, newPassword: pwForm.next },
-        { headers: { Authorization: `Bearer ${auth.token}` } }
-      );
+      await api.post('/auth/change-password', {
+        currentPassword: pwForm.current,
+        newPassword: pwForm.next
+      });
       setPwSuccess('Password changed successfully!');
+      addToast('Password changed successfully!', 'success');
       setPwForm({ current: '', next: '', confirm: '' });
     } catch (err) {
-      setPwError(err.response?.data || 'Failed to change password.');
+      const msg = err.response?.data || 'Failed to change password.';
+      setPwError(msg);
+      addToast(msg, 'error');
     } finally {
       setPwLoading(false);
     }
   };
 
-  // ── Login History ────────────────────────────────────────────────────────────
+  // Login History
   const openHistory = async () => {
     setMenuOpen(false);
     setShowHistory(true);
     setHistoryLoading(true);
     try {
-      const res = await axios.get(`${API_BASE_URL}/auth/login-history`, {
-        headers: { Authorization: `Bearer ${auth.token}` }
-      });
+      const res = await api.get('/auth/login-history');
       setHistory(res.data);
     } catch {
       setHistory([]);
+      addToast('Failed to load login history.', 'error');
     } finally {
       setHistoryLoading(false);
     }
@@ -135,6 +139,8 @@ const Navbar = () => {
                 >
                   {auth.role}
                 </span>
+
+                <NotificationBell />
 
                 {/* User dropdown trigger */}
                 <div className="position-relative">

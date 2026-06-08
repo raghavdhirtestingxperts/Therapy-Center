@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Lock, LogIn, ShieldOff } from 'lucide-react';
-import API_BASE_URL from '../apiConfig';
+import api from '../api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 // Per-email localStorage key so lockout only affects the specific account
 const getLockoutKey = (email) => `lockoutUntil::${email.toLowerCase().trim()}`;
@@ -20,8 +20,9 @@ const Login = () => {
 
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { addToast } = useToast();
 
-  // ── Re-evaluate lockout whenever the email changes ───────────────────────────
+  // Re-evaluate lockout whenever the email changes
   useEffect(() => {
     clearInterval(timerRef.current);
     setCountdown(0);
@@ -42,7 +43,7 @@ const Login = () => {
   // Cleanup on unmount
   useEffect(() => () => clearInterval(timerRef.current), []);
 
-  // ── Countdown ticker ─────────────────────────────────────────────────────────
+  // Countdown ticker
   const startCountdown = (lockedEmail, seconds) => {
     clearInterval(timerRef.current);
     setCountdown(seconds);
@@ -58,7 +59,7 @@ const Login = () => {
     }, 1000);
   };
 
-  // ── Format seconds as MM:SS ──────────────────────────────────────────────────
+  // Format seconds as MM:SS
   const formatCountdown = (secs) => {
     const m = Math.floor(secs / 60).toString().padStart(2, '0');
     const s = (secs % 60).toString().padStart(2, '0');
@@ -67,7 +68,7 @@ const Login = () => {
 
   const isLocked = countdown > 0;
 
-  // ── Login handler ────────────────────────────────────────────────────────────
+  // Login handler
   const handleLogin = async (e) => {
     e.preventDefault();
     if (isLocked) return;
@@ -75,8 +76,9 @@ const Login = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/login`, { email, password });
+      const response = await api.post('/auth/login', { email, password });
       login(response.data);
+      addToast('Welcome back! Successfully logged in.', 'success');
       navigate(`/${response.data.role.toLowerCase()}`);
     } catch (err) {
       if (err.response?.status === 423) {
@@ -88,8 +90,11 @@ const Login = () => {
           if (remaining > 0) startCountdown(email, remaining);
         }
         setPassword('');
+        addToast('Account temporarily locked due to too many failed attempts.', 'error');
       } else {
-        setError(err.response?.data || 'Invalid email or password. Please try again.');
+        const msg = err.response?.data || 'Invalid email or password. Please try again.';
+        setError(msg);
+        addToast(msg, 'error');
       }
     } finally {
       setLoading(false);
@@ -117,7 +122,7 @@ const Login = () => {
         <div className="card shadow-sm border-0" style={{ borderRadius: 'var(--radius-lg)' }}>
           <div className="card-body p-4 p-md-5">
 
-            {/* ── Lockout banner with countdown ── */}
+            {/* Lockout banner with countdown */}
             {isLocked && (
               <div
                 className="rounded-3 mb-3 p-3 text-center"
@@ -132,7 +137,7 @@ const Login = () => {
               </div>
             )}
 
-            {/* ── General error ── */}
+            {/* General error */}
             {error && !isLocked && (
               <div className="alert alert-danger rounded-3 small">{error}</div>
             )}
@@ -157,7 +162,9 @@ const Login = () => {
               </div>
 
               <div className="mb-4">
-                <label className="form-label small fw-semibold">Password</label>
+                <div className="d-flex justify-content-between align-items-center mb-1">
+                  <label className="form-label small fw-semibold mb-0">Password</label>
+                </div>
                 <div className="input-group">
                   <span className="input-group-text border-end-0">
                     <Lock size={18} color="var(--text-secondary)" />
