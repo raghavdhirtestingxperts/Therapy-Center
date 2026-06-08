@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Bell, Calendar, CreditCard, Clock } from 'lucide-react';
 import api from '../api';
 
 const NotificationBell = () => {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const bellRef = useRef(null);
 
   useEffect(() => {
     fetchNotifications();
@@ -12,6 +13,16 @@ const NotificationBell = () => {
     // Poll for notifications every 10 seconds to keep badge/list updated
     const interval = setInterval(fetchNotifications, 10000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (bellRef.current && !bellRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleToggle = () => {
@@ -72,7 +83,7 @@ const NotificationBell = () => {
   const count = notifications.length;
 
   return (
-    <div className="position-relative">
+    <div className="position-relative" ref={bellRef}>
       <button
         className="btn btn-sm d-flex align-items-center justify-content-center"
         style={{
@@ -96,33 +107,30 @@ const NotificationBell = () => {
       </button>
 
       {open && (
-        <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 9998 }} onClick={() => setOpen(false)} />
-          <div style={{
-            position: 'absolute', top: 'calc(100% + 10px)', right: 0,
-            background: '#ffffff', border: '1px solid rgba(0,0,0,0.10)', borderRadius: 14,
-            boxShadow: '0 16px 48px rgba(0,0,0,0.22)', minWidth: 300, maxWidth: 360,
-            zIndex: 9999, overflow: 'hidden', color: '#111'
-          }}>
-            <div className="px-4 py-3 border-bottom" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
-              <span className="fw-bold small">Notifications</span>
-              {count > 0 && <span className="badge bg-primary-subtle text-primary rounded-pill ms-2">{count}</span>}
-            </div>
-            <div style={{ maxHeight: 320, overflowY: 'auto' }}>
-              {notifications.length === 0 ? (
-                <div className="text-center py-4 text-muted small">No notifications</div>
-              ) : notifications.map(n => (
-                <div key={n.id} className="d-flex align-items-start gap-2 px-4 py-3 border-bottom" style={{ borderColor: 'rgba(0,0,0,0.04)', fontSize: '0.82rem' }}>
-                  {n.icon === 'calendar' ? <Calendar size={14} className="mt-1" style={{ color: '#6366f1', flexShrink: 0 }} /> : <CreditCard size={14} className="mt-1" style={{ color: '#f59e0b', flexShrink: 0 }} />}
-                  <div>
-                    <div style={{ color: '#1a1a2e' }}>{n.text}</div>
-                    <div className="text-muted" style={{ fontSize: '0.72rem' }}>{n.time}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 10px)', right: 0,
+          background: '#ffffff', border: '1px solid rgba(0,0,0,0.10)', borderRadius: 14,
+          boxShadow: '0 16px 48px rgba(0,0,0,0.22)', minWidth: 300, maxWidth: 360,
+          zIndex: 9999, overflow: 'hidden', color: '#111'
+        }}>
+          <div className="px-4 py-3 border-bottom" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
+            <span className="fw-bold small">Notifications</span>
+            {count > 0 && <span className="badge bg-primary-subtle text-primary rounded-pill ms-2">{count}</span>}
           </div>
-        </>
+          <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+            {notifications.length === 0 ? (
+              <div className="text-center py-4 text-muted small">No notifications</div>
+            ) : notifications.map(n => (
+              <div key={n.id} className="d-flex align-items-start gap-2 px-4 py-3 border-bottom" style={{ borderColor: 'rgba(0,0,0,0.04)', fontSize: '0.82rem' }}>
+                {n.icon === 'calendar' ? <Calendar size={14} className="mt-1" style={{ color: '#6366f1', flexShrink: 0 }} /> : <CreditCard size={14} className="mt-1" style={{ color: '#f59e0b', flexShrink: 0 }} />}
+                <div>
+                  <div style={{ color: '#1a1a2e' }}>{n.text}</div>
+                  <div className="text-muted" style={{ fontSize: '0.72rem' }}>{n.time}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LogOut, Heart, Sun, Moon, Key, History, ChevronDown, CheckCircle, XCircle } from 'lucide-react';
 import { useAuth, getGreeting } from '../context/AuthContext';
@@ -12,6 +12,17 @@ const Navbar = () => {
   const { auth, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { addToast } = useToast();
+  const userMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Dropdown open state
   const [menuOpen, setMenuOpen] = useState(false);
@@ -143,7 +154,7 @@ const Navbar = () => {
                 <NotificationBell />
 
                 {/* User dropdown trigger */}
-                <div className="position-relative">
+                <div className="position-relative" ref={userMenuRef}>
                   <button
                     id="user-menu-btn"
                     className="btn btn-sm d-flex align-items-center gap-2 px-3 rounded-pill"
@@ -157,57 +168,49 @@ const Navbar = () => {
                   </button>
 
                   {menuOpen && (
-                    <>
-                      {/* Invisible full-screen backdrop to close on outside click */}
-                      <div
-                        style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
-                        onClick={() => setMenuOpen(false)}
-                      />
-                      {/* Dropdown — high z-index + blur so it floats above ALL content */}
-                      <div
-                        style={{
-                          position: 'absolute', top: 'calc(100% + 10px)', right: 0,
-                          background: '#ffffff',
-                          border: '1px solid rgba(0,0,0,0.10)',
-                          borderRadius: 14,
-                          boxShadow: '0 16px 48px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.10)',
-                          minWidth: 210, zIndex: 9999, overflow: 'hidden',
-                          color: '#111'
-                        }}
+                    <div
+                      style={{
+                        position: 'absolute', top: 'calc(100% + 10px)', right: 0,
+                        background: '#ffffff',
+                        border: '1px solid rgba(0,0,0,0.10)',
+                        borderRadius: 14,
+                        boxShadow: '0 16px 48px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.10)',
+                        minWidth: 210, zIndex: 9999, overflow: 'hidden',
+                        color: '#111'
+                      }}
+                    >
+                      <button
+                        id="change-password-btn"
+                        className="d-flex align-items-center gap-2 px-4 py-3"
+                        style={{ color: '#1a1a2e', background: 'none', border: 'none', width: '100%', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500, transition: 'background 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.08)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                        onClick={openChangePw}
                       >
-                        <button
-                          id="change-password-btn"
-                          className="d-flex align-items-center gap-2 px-4 py-3"
-                          style={{ color: '#1a1a2e', background: 'none', border: 'none', width: '100%', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500, transition: 'background 0.15s' }}
-                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.08)'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                          onClick={openChangePw}
-                        >
-                          <Key size={15} color="#6366f1" /> Change Password
-                        </button>
-                        <button
-                          id="login-history-btn"
-                          className="d-flex align-items-center gap-2 px-4 py-3"
-                          style={{ color: '#1a1a2e', background: 'none', border: 'none', width: '100%', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500, transition: 'background 0.15s' }}
-                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.08)'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                          onClick={openHistory}
-                        >
-                          <History size={15} color="#14b8a6" /> Login History
-                        </button>
-                        <hr style={{ margin: '4px 16px', borderColor: 'rgba(0,0,0,0.08)' }} />
-                        <button
-                          id="logout-btn"
-                          className="d-flex align-items-center gap-2 px-4 py-3"
-                          style={{ color: '#ef4444', background: 'none', border: 'none', width: '100%', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500, transition: 'background 0.15s' }}
-                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                          onClick={handleLogout}
-                        >
-                          <LogOut size={15} /> Logout
-                        </button>
-                      </div>
-                    </>
+                        <Key size={15} color="#6366f1" /> Change Password
+                      </button>
+                      <button
+                        id="login-history-btn"
+                        className="d-flex align-items-center gap-2 px-4 py-3"
+                        style={{ color: '#1a1a2e', background: 'none', border: 'none', width: '100%', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500, transition: 'background 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.08)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                        onClick={openHistory}
+                      >
+                        <History size={15} color="#14b8a6" /> Login History
+                      </button>
+                      <hr style={{ margin: '4px 16px', borderColor: 'rgba(0,0,0,0.08)' }} />
+                      <button
+                        id="logout-btn"
+                        className="d-flex align-items-center gap-2 px-4 py-3"
+                        style={{ color: '#ef4444', background: 'none', border: 'none', width: '100%', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500, transition: 'background 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                        onClick={handleLogout}
+                      >
+                        <LogOut size={15} /> Logout
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
