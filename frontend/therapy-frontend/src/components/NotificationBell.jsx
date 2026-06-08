@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bell, Calendar, CreditCard, Clock } from 'lucide-react';
+import { Bell, Calendar, CreditCard, Clock, ShieldAlert, AlertTriangle } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import api from '../api';
 
 const NotificationBell = () => {
+  const { auth } = useAuth();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const bellRef = useRef(null);
@@ -13,7 +15,7 @@ const NotificationBell = () => {
     // Poll for notifications every 10 seconds to keep badge/list updated
     const interval = setInterval(fetchNotifications, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [auth.role]); // Refetch if role changes (e.g. login/logout transition)
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -34,53 +36,128 @@ const NotificationBell = () => {
 
   const fetchNotifications = async () => {
     try {
-      const [appRes, payRes] = await Promise.all([
-        api.get('/appointment').catch(() => ({ data: [] })),
-        api.get('/payment/history').catch(() => ({ data: [] }))
-      ]);
+      if (auth.role === 'Admin') {
+        const [appRes, payRes, usersRes] = await Promise.all([
+          api.get('/appointment').catch(() => ({ data: [] })),
+          api.get('/payment/history').catch(() => ({ data: [] })),
+          api.get('/admin/users').catch(() => ({ data: [] }))
+        ]);
 
-      const items = [];
-      const today = new Date();
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+        const items = [];
+        const todayStr = new Date().toDateString();
 
-      // Upcoming appointments (today or tomorrow)
-      (appRes.data || []).forEach(a => {
-        if (a.status !== 'Scheduled') return;
-        const appDate = new Date(a.appointmentDate);
-        const isToday = appDate.toDateString() === today.toDateString();
-        const isTomorrow = appDate.toDateString() === tomorrow.toDateString();
-        if (isToday || isTomorrow) {
+        // 1. Locked Accounts Alert
+        (usersRes.data || []).forEach(u => {
+          if (u.lockoutUntil && new Date(u.lockoutUntil) > new Date()) {
+            items.push({
+              id: `lockout-${u.userId}`,
+              icon: 'lockout',
+              text: `Security Alert: ${u.firstName} ${u.lastName} (${u.role}) is locked out.`,
+              time: 'Locked Out'
+            });
+          }
+        });
+
+        // 2. Unpaid Clinic-wide count and recent items
+        const paidIds = new Set((payRes.data || []).filter(p => p.status === 'Paid').map(p => p.appointmentId));
+        const unpaidApps = (appRes.data || []).filter(a => a.status !== 'Cancelled' && a.status !== 'Completed' && !paidIds.has(a.appointmentId));
+
+        if (unpaidApps.length > 5) {
           items.push({
-            id: `app-${a.appointmentId}`,
-            icon: 'calendar',
-            text: `${isToday ? 'Today' : 'Tomorrow'}: ${a.therapy?.name || 'Session'} at ${a.startTime?.substring(0, 5) || ''}`,
-            time: isToday ? 'Today' : 'Tomorrow'
+            id: 'unpaid-count-alert',
+            icon: 'payment-alert',
+            text: `Outstanding: ${unpaidApps.length} unpaid appointments in the clinic.`,
+            time: 'Urgent'
           });
         }
-      });
 
-      // Unpaid appointments
-      const paidIds = new Set((payRes.data || []).filter(p => p.status === 'Paid').map(p => p.appointmentId));
-      (appRes.data || []).forEach(a => {
-        if (a.status === 'Cancelled') return;
-        if (!paidIds.has(a.appointmentId)) {
+        // List 3 most recent unpaid appointments
+        unpaidApps.slice(-3).forEach(a => {
           items.push({
             id: `pay-${a.appointmentId}`,
             icon: 'payment',
-            text: `Payment pending: ${a.therapy?.name || 'Session'} — ₹${a.therapy?.cost || 0}`,
-            time: 'Pending'
+            text: `Unpaid: ${a.patient?.firstName || ''} ${a.patient?.lastName || 'Patient'} — ₹${a.therapy?.cost || 0}`,
+            time: new Date(a.appointmentDate).toLocaleDateString()
+          });
+        });
+
+        // 3. Today's Scheduled Count
+        const todaysScheduled = (appRes.data || []).filter(a => new Date(a.appointmentDate).toDateString() === todayStr && a.status === 'Scheduled');
+        if (todaysScheduled.length > 0) {
+          items.push({
+            id: 'today-scheduled-alert',
+            icon: 'calendar-count',
+            text: `Today: ${todaysScheduled.length} appointments scheduled.`,
+            time: 'Today'
           });
         }
-      });
 
-      setNotifications(items.slice(0, 8));
+        setNotifications(items.slice(0, 8));
+      } else {
+        // Patients, Doctors, and Receptionists notifications
+        const [appRes, payRes] = await Promise.all([
+          api.get('/appointment').catch(() => ({ data: [] })),
+          api.get('/payment/history').catch(() => ({ data: [] }))
+        ]);
+
+        const items = [];
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        // Upcoming appointments (today or tomorrow)
+        (appRes.data || []).forEach(a => {
+          if (a.status !== 'Scheduled') return;
+          const appDate = new Date(a.appointmentDate);
+          const isToday = appDate.toDateString() === today.toDateString();
+          const isTomorrow = appDate.toDateString() === tomorrow.toDateString();
+          if (isToday || isTomorrow) {
+            items.push({
+              id: `app-${a.appointmentId}`,
+              icon: 'calendar',
+              text: `${isToday ? 'Today' : 'Tomorrow'}: ${a.therapy?.name || 'Session'} at ${a.startTime?.substring(0, 5) || ''}`,
+              time: isToday ? 'Today' : 'Tomorrow'
+            });
+          }
+        });
+
+        // Unpaid appointments
+        const paidIds = new Set((payRes.data || []).filter(p => p.status === 'Paid').map(p => p.appointmentId));
+        (appRes.data || []).forEach(a => {
+          if (a.status === 'Cancelled') return;
+          if (!paidIds.has(a.appointmentId)) {
+            items.push({
+              id: `pay-${a.appointmentId}`,
+              icon: 'payment',
+              text: `Payment pending: ${a.therapy?.name || 'Session'} — ₹${a.therapy?.cost || 0}`,
+              time: 'Pending'
+            });
+          }
+        });
+
+        setNotifications(items.slice(0, 8));
+      }
     } catch {
       setNotifications([]);
     }
   };
 
   const count = notifications.length;
+
+  const renderIcon = (icon) => {
+    switch (icon) {
+      case 'lockout':
+        return <ShieldAlert size={14} className="mt-1" style={{ color: '#ef4444', flexShrink: 0 }} />;
+      case 'payment-alert':
+        return <AlertTriangle size={14} className="mt-1" style={{ color: '#f59e0b', flexShrink: 0 }} />;
+      case 'calendar':
+      case 'calendar-count':
+        return <Calendar size={14} className="mt-1" style={{ color: '#6366f1', flexShrink: 0 }} />;
+      case 'payment':
+      default:
+        return <CreditCard size={14} className="mt-1" style={{ color: '#f59e0b', flexShrink: 0 }} />;
+    }
+  };
 
   return (
     <div className="position-relative" ref={bellRef}>
@@ -122,7 +199,7 @@ const NotificationBell = () => {
               <div className="text-center py-4 text-muted small">No notifications</div>
             ) : notifications.map(n => (
               <div key={n.id} className="d-flex align-items-start gap-2 px-4 py-3 border-bottom" style={{ borderColor: 'rgba(0,0,0,0.04)', fontSize: '0.82rem' }}>
-                {n.icon === 'calendar' ? <Calendar size={14} className="mt-1" style={{ color: '#6366f1', flexShrink: 0 }} /> : <CreditCard size={14} className="mt-1" style={{ color: '#f59e0b', flexShrink: 0 }} />}
+                {renderIcon(n.icon)}
                 <div>
                   <div style={{ color: '#1a1a2e' }}>{n.text}</div>
                   <div className="text-muted" style={{ fontSize: '0.72rem' }}>{n.time}</div>
