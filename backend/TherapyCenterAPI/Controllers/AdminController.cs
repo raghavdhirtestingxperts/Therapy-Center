@@ -37,6 +37,7 @@ public class AdminController : ControllerBase
 
     // ─── Therapies CRUD ───
     [HttpGet("therapies")]
+    [ResponseCache(Duration = 60)]
     public async Task<IActionResult> GetTherapies()
         => Ok(await _adminService.GetTherapiesAsync());
 
@@ -94,6 +95,7 @@ public class AdminController : ControllerBase
 
     // ─── Doctors CRUD ───
     [HttpGet("doctors")]
+    [ResponseCache(Duration = 60)]
     public async Task<IActionResult> GetDoctors()
         => Ok(await _adminService.GetDoctorsAsync());
 

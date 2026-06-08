@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Configuration;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
@@ -14,18 +13,20 @@ public class PaymentService : IPaymentService
     private readonly IPatientRepository _patientRepository;
     private readonly IAppointmentRepository _appointmentRepository;
     private readonly IConfiguration _configuration;
-    private static readonly HttpClient _httpClient = new HttpClient();
+    private readonly IHttpClientFactory _httpClientFactory;
 
     public PaymentService(
         IPaymentRepository paymentRepository,
         IPatientRepository patientRepository,
         IAppointmentRepository appointmentRepository,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHttpClientFactory httpClientFactory)
     {
         _paymentRepository = paymentRepository;
         _patientRepository = patientRepository;
         _appointmentRepository = appointmentRepository;
         _configuration = configuration;
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task<(bool Success, string Message, object? Result)> PayAsync(DummyPayRequest request)
@@ -99,7 +100,9 @@ public class PaymentService : IPaymentService
 
         try
         {
-            var requestMessage = new HttpRequestMessage(HttpMethod.Post, "https://api.razorpay.com/v1/orders");
+            // Use IHttpClientFactory instead of static HttpClient
+            var client = _httpClientFactory.CreateClient("Razorpay");
+            var requestMessage = new HttpRequestMessage(HttpMethod.Post, "v1/orders");
             var authString = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{keyId}:{keySecret}"));
             requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Basic", authString);
 
@@ -111,7 +114,7 @@ public class PaymentService : IPaymentService
             };
             requestMessage.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
 
-            var response = await _httpClient.SendAsync(requestMessage);
+            var response = await client.SendAsync(requestMessage);
             if (!response.IsSuccessStatusCode)
             {
                 var errContent = await response.Content.ReadAsStringAsync();

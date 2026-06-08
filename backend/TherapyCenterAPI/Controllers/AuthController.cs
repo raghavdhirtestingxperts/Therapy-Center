@@ -1,10 +1,7 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
-using BCrypt.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.RateLimiting;
 using TherapyCenterAPI.Models;
 using TherapyCenterAPI.Repositories;
 using TherapyCenterAPI.Services;
@@ -16,110 +13,29 @@ namespace TherapyCenterAPI.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
-    private readonly IConfiguration _configuration;
     private readonly IUserRepository _userRepository;
 
-    // ─── Lockout policy ───────────────────────────────────────────────────────
-    private const int MaxFailedAttempts = 5;
-    private const int LockoutMinutes = 15;
-
-    public AuthController(IAuthService authService, IConfiguration configuration, IUserRepository userRepository)
+    public AuthController(IAuthService authService, IUserRepository userRepository)
     {
         _authService = authService;
-        _configuration = configuration;
         _userRepository = userRepository;
     }
 
-    // ─── POST /api/auth/login ─────────────────────────────────────────────────
+    // POST /api/auth/login
     [HttpPost("login")]
+    [EnableRateLimiting("AuthPolicy")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var (success, result, statusCode) = await _authService.LoginAsync(request, ip);
 
-        // 1. Find user by email
-        var user = await _userRepository.GetByEmailAsync(request.Email);
-        if (user == null || !user.IsActive)
-        {
-            // Record failed attempt (no userId since email not found)
-            await _userRepository.AddLoginHistoryAsync(new LoginHistory
-            {
-                UserId = null,
-                Email = request.Email,
-                IsSuccess = false,
-                IpAddress = ip
-            });
-            return Unauthorized("Invalid credentials or inactive account.");
-        }
+        if (!success)
+            return StatusCode(statusCode, result);
 
-        // 2. Check if account is currently locked
-        if (user.LockoutUntil.HasValue && user.LockoutUntil.Value > DateTime.UtcNow)
-        {
-            // Force UTC Kind before serializing — Pomelo reads DateTime as Unspecified
-            // which causes ToString("o") to omit "Z", making clients misparse as local time
-            var lockoutUtc = DateTime.SpecifyKind(user.LockoutUntil.Value, DateTimeKind.Utc);
-            return StatusCode(423, new
-            {
-                message = "Account locked due to too many failed attempts.",
-                lockoutUntil = lockoutUtc.ToString("o")
-            });
-        }
-
-        // 3. Verify password (supports both legacy plain-text and BCrypt hashes)
-        bool passwordValid = VerifyPassword(request.Password, user.PasswordHash);
-
-        if (!passwordValid)
-        {
-            user.FailedLoginAttempts++;
-            if (user.FailedLoginAttempts >= MaxFailedAttempts)
-                user.LockoutUntil = DateTime.UtcNow.AddMinutes(LockoutMinutes);
-
-            await _userRepository.UpdateAsync(user);
-
-            await _userRepository.AddLoginHistoryAsync(new LoginHistory
-            {
-                UserId = user.UserId,
-                Email = user.Email,
-                IsSuccess = false,
-                IpAddress = ip
-            });
-
-            if (user.LockoutUntil.HasValue)
-            {
-                var lockoutUtc = DateTime.SpecifyKind(user.LockoutUntil.Value, DateTimeKind.Utc);
-                return StatusCode(423, new
-                {
-                    message = $"Account locked after {MaxFailedAttempts} failed attempts.",
-                    lockoutUntil = lockoutUtc.ToString("o")
-                });
-            }
-
-            int attemptsLeft = MaxFailedAttempts - user.FailedLoginAttempts;
-            return Unauthorized($"Invalid credentials. {attemptsLeft} attempt(s) remaining before lockout.");
-        }
-
-        // 4. Success — reset lockout counters and upgrade plain-text → BCrypt if needed
-        user.FailedLoginAttempts = 0;
-        user.LockoutUntil = null;
-
-        // Upgrade legacy plain-text password to BCrypt on first successful login
-        if (!user.PasswordHash.StartsWith("$2"))
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
-
-        await _userRepository.UpdateAsync(user);
-
-        await _userRepository.AddLoginHistoryAsync(new LoginHistory
-        {
-            UserId = user.UserId,
-            Email = user.Email,
-            IsSuccess = true,
-            IpAddress = ip
-        });
-
-        var token = GenerateJwtToken(user);
-        return Ok(new { token, role = user.Role, userId = user.UserId, firstName = user.FirstName, lastName = user.LastName });
+        return Ok(result);
     }
 
-    // ─── GET /api/auth/profile ────────────────────────────────────────────────
+    // GET /api/auth/profile
     [Authorize]
     [HttpGet("profile")]
     public async Task<IActionResult> GetProfile()
@@ -135,18 +51,18 @@ public class AuthController : ControllerBase
         return Ok(new { userId = user.UserId, firstName = user.FirstName, lastName = user.LastName, role = user.Role });
     }
 
-    // ─── POST /api/auth/register ──────────────────────────────────────────────
+    // POST /api/auth/register
     [HttpPost("register")]
+    [EnableRateLimiting("AuthPolicy")]
     public async Task<IActionResult> Register([FromBody] User user)
     {
-        // Hash the password before storing
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(user.PasswordHash);
         var (success, message) = await _authService.RegisterAsync(user);
         if (!success) return BadRequest(message);
         return Ok(message);
     }
 
-    // ─── POST /api/auth/change-password ───────────────────────────────────────
+    // POST /api/auth/change-password
     [Authorize]
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
@@ -155,30 +71,12 @@ public class AuthController : ControllerBase
         if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
             return Unauthorized("Invalid token.");
 
-        var user = await _userRepository.GetByIdAsync(userId);
-        if (user == null || !user.IsActive)
-            return NotFound("User not found.");
-
-        // Validate minimum new password length
-        if (string.IsNullOrWhiteSpace(request.NewPassword) || request.NewPassword.Length < 6)
-            return BadRequest("New password must be at least 6 characters.");
-
-        // Verify current password
-        if (!VerifyPassword(request.CurrentPassword, user.PasswordHash))
-            return BadRequest("Current password is incorrect.");
-
-        // Reject if new password is identical to the current one
-        if (VerifyPassword(request.NewPassword, user.PasswordHash))
-            return BadRequest("New password must be different from your current password.");
-
-        // Update to BCrypt hash
-        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
-        await _userRepository.UpdateAsync(user);
-
-        return Ok("Password changed successfully.");
+        var (success, message) = await _authService.ChangePasswordAsync(userId, request);
+        if (!success) return BadRequest(message);
+        return Ok(message);
     }
 
-    // ─── GET /api/auth/login-history ─────────────────────────────────────────
+    // GET /api/auth/login-history
     [Authorize]
     [HttpGet("login-history")]
     public async Task<IActionResult> GetLoginHistory()
@@ -187,61 +85,13 @@ public class AuthController : ControllerBase
         if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
             return Unauthorized("Invalid token.");
 
-        var history = await _userRepository.GetLoginHistoryAsync(userId, 10);
-
-        return Ok(history.Select(h => new
-        {
-            h.Id,
-            h.IsSuccess,
-            h.IpAddress,
-            AttemptedAt = h.AttemptedAt.ToString("yyyy-MM-dd HH:mm:ss") + " UTC"
-        }));
+        var history = await _authService.GetLoginHistoryAsync(userId, 10);
+        return Ok(history);
     }
 
-    // ─── GET /api/auth/ping ───────────────────────────────────────────────────
+
+
+    // GET /api/auth/ping
     [HttpGet("ping")]
     public IActionResult Ping() => Ok(new { status = "healthy", timestamp = DateTime.UtcNow });
-
-    // ─── Helpers ──────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Verifies a password against a stored hash.
-    /// Supports both BCrypt hashes (start with $2) and legacy plain-text.
-    /// </summary>
-    private static bool VerifyPassword(string inputPassword, string storedHash)
-    {
-        if (storedHash.StartsWith("$2"))
-        {
-            // BCrypt hash
-            return BCrypt.Net.BCrypt.Verify(inputPassword, storedHash);
-        }
-        // Legacy plain-text comparison
-        return inputPassword == storedHash;
-    }
-
-    private string GenerateJwtToken(User user)
-    {
-        var jwtKey = _configuration["Jwt:Key"];
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var claims = new[]
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-            new Claim(ClaimTypes.Role, user.Role)
-        };
-
-        var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.Now.AddHours(8),
-            signingCredentials: creds
-        );
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
 }

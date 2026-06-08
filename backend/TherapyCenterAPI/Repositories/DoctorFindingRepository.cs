@@ -17,6 +17,7 @@ public class DoctorFindingRepository : IDoctorFindingRepository
     {
         return await _context.DoctorFindings
             .Include(f => f.Appointment).ThenInclude(a => a.Therapy)
+            .Include(f => f.Appointment).ThenInclude(a => a.Patient)
             .FirstOrDefaultAsync(f => f.FindingId == id);
     }
 
@@ -24,6 +25,7 @@ public class DoctorFindingRepository : IDoctorFindingRepository
     {
         return await _context.DoctorFindings
             .Include(f => f.Appointment).ThenInclude(a => a.Therapy)
+            .Include(f => f.Appointment).ThenInclude(a => a.Patient)
             .FirstOrDefaultAsync(f => f.AppointmentId == appointmentId);
     }
 
@@ -32,6 +34,7 @@ public class DoctorFindingRepository : IDoctorFindingRepository
         return await _context.DoctorFindings
             .Include(f => f.Appointment).ThenInclude(a => a.Doctor).ThenInclude(d => d.User)
             .Include(f => f.Appointment).ThenInclude(a => a.Therapy)
+            .Include(f => f.Appointment).ThenInclude(a => a.Patient)
             .Where(f => f.Appointment.PatientId == patientId)
             .OrderByDescending(f => f.CreatedAt)
             .ToListAsync();

@@ -19,6 +19,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Payment> Payments { get; set; }
     public DbSet<Slot> Slots { get; set; }
     public DbSet<LoginHistory> LoginHistories { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
