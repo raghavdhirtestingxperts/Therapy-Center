@@ -21,8 +21,16 @@ public class SlotRepository : ISlotRepository
 
         if (doctorId.HasValue)
             query = query.Where(s => s.DoctorId == doctorId.Value);
+
         if (date.HasValue)
+        {
             query = query.Where(s => s.Date.Date == date.Value.Date);
+        }
+        else
+        {
+            var today = DateTime.UtcNow.Date;
+            query = query.Where(s => s.Date.Date >= today);
+        }
 
         return await query
             .OrderBy(s => s.Date)
