@@ -171,40 +171,40 @@ const Navbar = () => {
                     <div
                       style={{
                         position: 'absolute', top: 'calc(100% + 10px)', right: 0,
-                        background: '#ffffff',
-                        border: '1px solid rgba(0,0,0,0.10)',
+                        background: 'var(--surface)',
+                        border: '1px solid var(--border)',
                         borderRadius: 14,
-                        boxShadow: '0 16px 48px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.10)',
+                        boxShadow: 'var(--shadow-premium)',
                         minWidth: 210, zIndex: 9999, overflow: 'hidden',
-                        color: '#111'
+                        color: 'var(--text-primary)'
                       }}
                     >
                       <button
                         id="change-password-btn"
                         className="d-flex align-items-center gap-2 px-4 py-3"
-                        style={{ color: '#1a1a2e', background: 'none', border: 'none', width: '100%', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500, transition: 'background 0.15s' }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.08)'}
+                        style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', width: '100%', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500, transition: 'background 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--primary-glow)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'none'}
                         onClick={openChangePw}
                       >
-                        <Key size={15} color="#6366f1" /> Change Password
+                        <Key size={15} color="var(--primary)" /> Change Password
                       </button>
                       <button
                         id="login-history-btn"
                         className="d-flex align-items-center gap-2 px-4 py-3"
-                        style={{ color: '#1a1a2e', background: 'none', border: 'none', width: '100%', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500, transition: 'background 0.15s' }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.08)'}
+                        style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', width: '100%', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500, transition: 'background 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--primary-glow)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'none'}
                         onClick={openHistory}
                       >
-                        <History size={15} color="#14b8a6" /> Login History
+                        <History size={15} color="var(--accent-teal)" /> Login History
                       </button>
-                      <hr style={{ margin: '4px 16px', borderColor: 'rgba(0,0,0,0.08)' }} />
+                      <hr style={{ margin: '4px 16px', borderColor: 'var(--border)' }} />
                       <button
                         id="logout-btn"
                         className="d-flex align-items-center gap-2 px-4 py-3"
-                        style={{ color: '#ef4444', background: 'none', border: 'none', width: '100%', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500, transition: 'background 0.15s' }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
+                        style={{ color: 'var(--error)', background: 'none', border: 'none', width: '100%', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500, transition: 'background 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'none'}
                         onClick={handleLogout}
                       >

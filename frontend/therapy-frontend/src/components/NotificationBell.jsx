@@ -165,7 +165,8 @@ const NotificationBell = () => {
         className="btn btn-sm d-flex align-items-center justify-content-center"
         style={{
           background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)',
-          borderRadius: 10, width: 36, height: 36, color: 'white', position: 'relative'
+          borderRadius: 10, width: 36, height: 36, color: 'white', position: 'relative',
+          padding: 0
         }}
         onClick={handleToggle}
         title="Notifications"
@@ -186,11 +187,11 @@ const NotificationBell = () => {
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 10px)', right: 0,
-          background: '#ffffff', border: '1px solid rgba(0,0,0,0.10)', borderRadius: 14,
-          boxShadow: '0 16px 48px rgba(0,0,0,0.22)', minWidth: 300, maxWidth: 360,
-          zIndex: 9999, overflow: 'hidden', color: '#111'
+          background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14,
+          boxShadow: 'var(--shadow-premium)', minWidth: 300, maxWidth: 360,
+          zIndex: 9999, overflow: 'hidden', color: 'var(--text-primary)'
         }}>
-          <div className="px-4 py-3 border-bottom" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
+          <div className="px-4 py-3 border-bottom" style={{ borderColor: 'var(--border)' }}>
             <span className="fw-bold small">Notifications</span>
             {count > 0 && <span className="badge bg-primary-subtle text-primary rounded-pill ms-2">{count}</span>}
           </div>
@@ -198,10 +199,10 @@ const NotificationBell = () => {
             {notifications.length === 0 ? (
               <div className="text-center py-4 text-muted small">No notifications</div>
             ) : notifications.map(n => (
-              <div key={n.id} className="d-flex align-items-start gap-2 px-4 py-3 border-bottom" style={{ borderColor: 'rgba(0,0,0,0.04)', fontSize: '0.82rem' }}>
+              <div key={n.id} className="d-flex align-items-start gap-2 px-4 py-3 border-bottom" style={{ borderColor: 'var(--border-light)', fontSize: '0.82rem' }}>
                 {renderIcon(n.icon)}
                 <div>
-                  <div style={{ color: '#1a1a2e' }}>{n.text}</div>
+                  <div style={{ color: 'var(--text-secondary)' }}>{n.text}</div>
                   <div className="text-muted" style={{ fontSize: '0.72rem' }}>{n.time}</div>
                 </div>
               </div>

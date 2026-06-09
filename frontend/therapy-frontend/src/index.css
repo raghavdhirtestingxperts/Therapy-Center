@@ -869,3 +869,12 @@ footer.theme-footer {
   transform: translateY(0);
 }
 
+/* ─── Overrides for Bootstrap text color utilities ─── */
+.text-muted {
+  color: var(--text-muted) !important;
+}
+.text-secondary {
+  color: var(--text-secondary) !important;
+}
+
+
