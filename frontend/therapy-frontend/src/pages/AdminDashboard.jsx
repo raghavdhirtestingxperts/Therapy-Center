@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
-import { Plus, Trash2, Edit, Users, Stethoscope, Calendar, BarChart3, Clock, UserPlus, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Edit, Users, Stethoscope, Calendar, BarChart3, Clock, UserPlus, RefreshCw, Eye, EyeOff, Lock } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import DashboardCharts from '../components/DashboardCharts';
@@ -20,6 +20,11 @@ const AdminDashboard = () => {
   const [form, setForm] = useState({});
   const [slotFilter, setSlotFilter] = useState({ doctorId: '', date: '' });
   const [loading, setLoading] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    setShowPassword(false);
+  }, [showModal]);
 
   const getTodayString = () => {
     const today = new Date();
@@ -369,7 +374,29 @@ const AdminDashboard = () => {
                   <div className="modal-body">
                     <div className="row"><div className="col-6 mb-3"><label className="form-label small fw-bold">First Name</label><input type="text" className="form-control" value={form.firstName || ''} onChange={e => setForm({...form, firstName: e.target.value})} required /></div><div className="col-6 mb-3"><label className="form-label small fw-bold">Last Name</label><input type="text" className="form-control" value={form.lastName || ''} onChange={e => setForm({...form, lastName: e.target.value})} required /></div></div>
                     <div className="mb-3"><label className="form-label small fw-bold">Email</label><input type="email" className="form-control" value={form.email || ''} onChange={e => setForm({...form, email: e.target.value})} required /></div>
-                    <div className="mb-3"><label className="form-label small fw-bold">Password{editItem ? ' (leave blank to keep)' : ''}</label><input type="password" className="form-control" value={form.password || ''} onChange={e => setForm({...form, password: e.target.value})} {...(!editItem && { required: true })} /></div>
+                    <div className="mb-3">
+                      <label className="form-label small fw-bold">Password{editItem ? ' (leave blank to keep)' : ''}</label>
+                      <div className="input-group">
+                        <span className="input-group-text border-end-0">
+                          <Lock size={18} color="var(--text-secondary)" />
+                        </span>
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          className="form-control border-start-0 border-end-0"
+                          value={form.password || ''}
+                          onChange={e => setForm({...form, password: e.target.value})}
+                          {...(!editItem && { required: true })}
+                        />
+                        <button
+                          type="button"
+                          className="input-group-text border-start-0 px-3 d-flex align-items-center"
+                          onClick={() => setShowPassword(!showPassword)}
+                          style={{ cursor: 'pointer', background: 'var(--input-group-bg)', borderColor: 'var(--input-border)' }}
+                        >
+                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
+                    </div>
                     <div className="mb-3"><label className="form-label small fw-bold">Phone</label><input type="text" className="form-control" value={form.phoneNumber || ''} onChange={e => setForm({...form, phoneNumber: e.target.value})} /></div>
                   </div>
                   <div className="modal-footer"><button type="button" className="btn btn-light" onClick={() => setShowModal(null)}>Cancel</button><button type="submit" className="btn btn-primary">Save</button></div>
@@ -381,7 +408,29 @@ const AdminDashboard = () => {
                   <div className="modal-body">
                     <div className="row"><div className="col-6 mb-3"><label className="form-label small fw-bold">First Name</label><input type="text" className="form-control" value={form.firstName || ''} onChange={e => setForm({...form, firstName: e.target.value})} required /></div><div className="col-6 mb-3"><label className="form-label small fw-bold">Last Name</label><input type="text" className="form-control" value={form.lastName || ''} onChange={e => setForm({...form, lastName: e.target.value})} required /></div></div>
                     <div className="mb-3"><label className="form-label small fw-bold">Email</label><input type="email" className="form-control" value={form.email || ''} onChange={e => setForm({...form, email: e.target.value})} required /></div>
-                    <div className="mb-3"><label className="form-label small fw-bold">Password{editItem ? ' (leave blank to keep)' : ''}</label><input type="password" className="form-control" value={form.password || ''} onChange={e => setForm({...form, password: e.target.value})} {...(!editItem && { required: true })} /></div>
+                    <div className="mb-3">
+                      <label className="form-label small fw-bold">Password{editItem ? ' (leave blank to keep)' : ''}</label>
+                      <div className="input-group">
+                        <span className="input-group-text border-end-0">
+                          <Lock size={18} color="var(--text-secondary)" />
+                        </span>
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          className="form-control border-start-0 border-end-0"
+                          value={form.password || ''}
+                          onChange={e => setForm({...form, password: e.target.value})}
+                          {...(!editItem && { required: true })}
+                        />
+                        <button
+                          type="button"
+                          className="input-group-text border-start-0 px-3 d-flex align-items-center"
+                          onClick={() => setShowPassword(!showPassword)}
+                          style={{ cursor: 'pointer', background: 'var(--input-group-bg)', borderColor: 'var(--input-border)' }}
+                        >
+                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
+                    </div>
                     <div className="mb-3"><label className="form-label small fw-bold">Specialization</label><input type="text" className="form-control" value={form.specialization || ''} onChange={e => setForm({...form, specialization: e.target.value})} required /></div>
                     <div className="mb-3"><label className="form-label small fw-bold">Available Days</label><input type="text" className="form-control" placeholder="Mon,Tue,Wed" value={form.availableDays || ''} onChange={e => setForm({...form, availableDays: e.target.value})} required /></div>
                     <div className="row"><div className="col-6 mb-3"><label className="form-label small fw-bold">Start Time</label><input type="time" className="form-control" value={form.startTime || '09:00'} onChange={e => setForm({...form, startTime: e.target.value})} required /></div><div className="col-6 mb-3"><label className="form-label small fw-bold">End Time</label><input type="time" className="form-control" value={form.endTime || '17:00'} onChange={e => setForm({...form, endTime: e.target.value})} required /></div></div>

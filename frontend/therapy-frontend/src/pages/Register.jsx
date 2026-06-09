@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Lock, Mail, UserPlus, Phone, User } from 'lucide-react';
+import { Lock, Mail, UserPlus, Phone, User, Eye, EyeOff } from 'lucide-react';
 import api from '../api';
 import { useToast } from '../context/ToastContext';
 
@@ -8,6 +8,7 @@ const Register = () => {
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', passwordHash: '', role: 'Guardian', phoneNumber: ''
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -120,12 +121,20 @@ const Register = () => {
                     <Lock size={18} color="var(--text-secondary)" />
                   </span>
                   <input
-                    type="password"
-                    className="form-control border-start-0 py-2"
+                    type={showPassword ? 'text' : 'password'}
+                    className="form-control border-start-0 border-end-0 py-2"
                     value={formData.passwordHash}
                     onChange={e => setFormData({ ...formData, passwordHash: e.target.value })}
                     required
                   />
+                  <button
+                    type="button"
+                    className="input-group-text border-start-0 px-3 d-flex align-items-center"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ cursor: 'pointer', background: 'var(--input-group-bg)', borderColor: 'var(--input-border)' }}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
 

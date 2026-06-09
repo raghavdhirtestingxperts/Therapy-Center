@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogOut, Heart, Sun, Moon, Key, History, ChevronDown, CheckCircle, XCircle } from 'lucide-react';
+import { LogOut, Heart, Sun, Moon, Key, History, ChevronDown, CheckCircle, XCircle, Eye, EyeOff, Lock } from 'lucide-react';
 import { useAuth, getGreeting } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
@@ -33,6 +33,9 @@ const Navbar = () => {
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState('');
   const [pwLoading, setPwLoading] = useState(false);
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNextPw, setShowNextPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
 
   // Login History modal state
   const [showHistory, setShowHistory] = useState(false);
@@ -52,7 +55,17 @@ const Navbar = () => {
     setPwForm({ current: '', next: '', confirm: '' });
     setPwError('');
     setPwSuccess('');
+    setShowCurrentPw(false);
+    setShowNextPw(false);
+    setShowConfirmPw(false);
     setShowChangePw(true);
+  };
+
+  const closeChangePw = () => {
+    setShowChangePw(false);
+    setShowCurrentPw(false);
+    setShowNextPw(false);
+    setShowConfirmPw(false);
   };
 
   const handleChangePw = async (e) => {
@@ -237,7 +250,7 @@ const Navbar = () => {
         <div
           className="modal fade show d-block"
           style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}
-          onClick={e => { if (e.target === e.currentTarget) setShowChangePw(false); }}
+          onClick={e => { if (e.target === e.currentTarget) closeChangePw(); }}
         >
           <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: 420 }}>
             <div className="modal-content border-0 shadow-lg" style={{ borderRadius: 16 }}>
@@ -248,7 +261,7 @@ const Navbar = () => {
                   </div>
                   <h5 className="modal-title fw-bold mb-0">Change Password</h5>
                 </div>
-                <button type="button" className="btn-close" onClick={() => setShowChangePw(false)} />
+                <button type="button" className="btn-close" onClick={closeChangePw} />
               </div>
 
               <form onSubmit={handleChangePw}>
@@ -266,41 +279,80 @@ const Navbar = () => {
 
                   <div className="mb-3">
                     <label className="form-label small fw-semibold">Current Password</label>
-                    <input
-                      type="password"
-                      className="form-control rounded-3"
-                      placeholder="Enter current password"
-                      value={pwForm.current}
-                      onChange={e => setPwForm(f => ({ ...f, current: e.target.value }))}
-                      required
-                    />
+                    <div className="input-group">
+                      <span className="input-group-text border-end-0">
+                        <Lock size={18} color="var(--text-secondary)" />
+                      </span>
+                      <input
+                        type={showCurrentPw ? 'text' : 'password'}
+                        className="form-control border-start-0 border-end-0 py-2"
+                        placeholder="Enter current password"
+                        value={pwForm.current}
+                        onChange={e => setPwForm(f => ({ ...f, current: e.target.value }))}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="input-group-text border-start-0 px-3 d-flex align-items-center"
+                        onClick={() => setShowCurrentPw(!showCurrentPw)}
+                        style={{ cursor: 'pointer', background: 'var(--input-group-bg)', borderColor: 'var(--input-border)' }}
+                      >
+                        {showCurrentPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </div>
                   <div className="mb-3">
                     <label className="form-label small fw-semibold">New Password</label>
-                    <input
-                      type="password"
-                      className="form-control rounded-3"
-                      placeholder="Min. 6 characters"
-                      value={pwForm.next}
-                      onChange={e => setPwForm(f => ({ ...f, next: e.target.value }))}
-                      required
-                    />
+                    <div className="input-group">
+                      <span className="input-group-text border-end-0">
+                        <Lock size={18} color="var(--text-secondary)" />
+                      </span>
+                      <input
+                        type={showNextPw ? 'text' : 'password'}
+                        className="form-control border-start-0 border-end-0 py-2"
+                        placeholder="Min. 6 characters"
+                        value={pwForm.next}
+                        onChange={e => setPwForm(f => ({ ...f, next: e.target.value }))}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="input-group-text border-start-0 px-3 d-flex align-items-center"
+                        onClick={() => setShowNextPw(!showNextPw)}
+                        style={{ cursor: 'pointer', background: 'var(--input-group-bg)', borderColor: 'var(--input-border)' }}
+                      >
+                        {showNextPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </div>
                   <div className="mb-1">
                     <label className="form-label small fw-semibold">Confirm New Password</label>
-                    <input
-                      type="password"
-                      className="form-control rounded-3"
-                      placeholder="Repeat new password"
-                      value={pwForm.confirm}
-                      onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))}
-                      required
-                    />
+                    <div className="input-group">
+                      <span className="input-group-text border-end-0">
+                        <Lock size={18} color="var(--text-secondary)" />
+                      </span>
+                      <input
+                        type={showConfirmPw ? 'text' : 'password'}
+                        className="form-control border-start-0 border-end-0 py-2"
+                        placeholder="Repeat new password"
+                        value={pwForm.confirm}
+                        onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="input-group-text border-start-0 px-3 d-flex align-items-center"
+                        onClick={() => setShowConfirmPw(!showConfirmPw)}
+                        style={{ cursor: 'pointer', background: 'var(--input-group-bg)', borderColor: 'var(--input-border)' }}
+                      >
+                        {showConfirmPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 <div className="modal-footer border-0 px-4 pb-4 pt-2 gap-2">
-                  <button type="button" className="btn btn-light rounded-3 px-4" onClick={() => setShowChangePw(false)}>
+                  <button type="button" className="btn btn-light rounded-3 px-4" onClick={closeChangePw}>
                     Cancel
                   </button>
                   <button
