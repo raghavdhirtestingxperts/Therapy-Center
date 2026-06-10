@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Lock, LogIn, ShieldOff, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, LogIn, ShieldOff, Eye, EyeOff, ArrowLeft, Shield, Stethoscope, ClipboardList, Users } from 'lucide-react';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -9,6 +9,7 @@ import { useToast } from '../context/ToastContext';
 const getLockoutKey = (email) => `lockoutUntil::${email.toLowerCase().trim()}`;
 
 const Login = () => {
+  const [selectedRole, setSelectedRole] = useState(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -78,6 +79,19 @@ const Login = () => {
     setError('');
     try {
       const response = await api.post('/auth/login', { email, password });
+
+      // Verify that the user's role matches the selected role
+      const userRole = response.data.role;
+      const expectedRole = selectedRole === 'Parent' ? 'Guardian' : selectedRole;
+      if (userRole.toLowerCase() !== expectedRole.toLowerCase()) {
+        const errorMsg = `This account does not have ${selectedRole} privileges.`;
+        setError(errorMsg);
+        addToast(errorMsg, 'error');
+        setPassword('');
+        setLoading(false);
+        return;
+      }
+
       login(response.data);
       addToast('Welcome back! Successfully logged in.', 'success');
       navigate(`/${response.data.role.toLowerCase()}`);
@@ -102,22 +116,178 @@ const Login = () => {
     }
   };
 
+  const getRoleBranding = (role) => {
+    switch (role) {
+      case 'Parent':
+        return {
+          title: 'Parent / Guardian',
+          gradient: 'linear-gradient(135deg, #ec4899, #be185d)',
+          icon: Users
+        };
+      case 'Doctor':
+        return {
+          title: 'Doctor / Therapist',
+          gradient: 'linear-gradient(135deg, #10b981, #047857)',
+          icon: Stethoscope
+        };
+      case 'Receptionist':
+        return {
+          title: 'Receptionist',
+          gradient: 'linear-gradient(135deg, #f59e0b, #d97706)',
+          icon: ClipboardList
+        };
+      case 'Admin':
+        return {
+          title: 'Administrator',
+          gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+          icon: Shield
+        };
+      default:
+        return {
+          title: 'Sign In',
+          gradient: 'linear-gradient(135deg, var(--bs-primary), var(--bs-secondary))',
+          icon: LogIn
+        };
+    }
+  };
+
+  if (!selectedRole) {
+    const rolesConfig = [
+      {
+        id: 'Parent',
+        title: 'Parent / Guardian',
+        desc: 'Book appointments, view therapy findings & make payments.',
+        gradient: 'linear-gradient(135deg, #ec4899, #be185d)',
+        icon: Users
+      },
+      {
+        id: 'Doctor',
+        title: 'Doctor / Therapist',
+        desc: 'View appointments, log findings & recommendations.',
+        gradient: 'linear-gradient(135deg, #10b981, #047857)',
+        icon: Stethoscope
+      },
+      {
+        id: 'Receptionist',
+        title: 'Receptionist',
+        desc: 'Manage appointments, schedule slots & assign doctors.',
+        gradient: 'linear-gradient(135deg, #f59e0b, #d97706)',
+        icon: ClipboardList
+      },
+      {
+        id: 'Admin',
+        title: 'Administrator',
+        desc: 'Manage users, therapies, payments & system settings.',
+        gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+        icon: Shield
+      }
+    ];
+
+    return (
+      <div className="row justify-content-center animate-fade-in" style={{ marginTop: '4vh' }}>
+        <div className="col-12 text-center mb-5">
+          <div style={{
+            width: 64, height: 64, borderRadius: 16,
+            background: 'linear-gradient(135deg, var(--bs-primary), var(--bs-secondary))',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16
+          }}>
+            <LogIn size={28} color="white" />
+          </div>
+          <h2 className="fw-bold" style={{ color: 'var(--text-primary)' }}>Sign In</h2>
+          <p style={{ color: 'var(--text-secondary)', maxWidth: '480px', margin: '0 auto' }}>
+            Welcome to Special Kids Therapy Center. Please select your role to proceed to the login portal.
+          </p>
+        </div>
+
+        <div className="col-lg-10">
+          <div className="row g-4 justify-content-center">
+            {rolesConfig.map((role) => {
+              const IconComponent = role.icon;
+              return (
+                <div key={role.id} className="col-md-6 col-xl-3">
+                  <div
+                    className="card border-0 shadow-sm h-100 cursor-pointer text-center hover-lift animate-fade-in"
+                    onClick={() => setSelectedRole(role.id)}
+                    style={{
+                      cursor: 'pointer',
+                      borderRadius: 'var(--radius-lg)',
+                      border: '1px solid var(--border)',
+                      transition: 'transform 0.25s ease, box-shadow 0.25s ease, background-color 0.3s ease, border-color 0.3s ease',
+                    }}
+                  >
+                    <div className="card-body p-4 d-flex flex-column align-items-center justify-content-between">
+                      <div className="mb-4" style={{
+                        width: 60, height: 60, borderRadius: '50%',
+                        background: role.gradient,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 8px 16px rgba(0,0,0,0.1)'
+                      }}>
+                        <IconComponent size={26} color="white" />
+                      </div>
+                      <div>
+                        <h4 className="fw-bold mb-2" style={{ color: 'var(--text-primary)', fontSize: '1.2rem' }}>
+                          {role.title}
+                        </h4>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.4' }}>
+                          {role.desc}
+                        </p>
+                      </div>
+                      <div className="mt-3 w-100">
+                        <button className="btn btn-outline-theme btn-sm w-100 py-2 rounded-pill fw-semibold">
+                          Login as {role.id === 'Parent' ? 'Parent' : role.id}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="col-12 text-center mt-5">
+          <p className="small" style={{ color: 'var(--text-secondary)' }}>
+            Don&apos;t have an account?{' '}
+            <Link to="/register" className="fw-bold text-decoration-none" style={{ color: 'var(--primary)' }}>
+              Register here
+            </Link>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const branding = getRoleBranding(selectedRole);
+  const RoleIcon = branding.icon;
+
   return (
-    <div className="row justify-content-center" style={{ marginTop: '8vh' }}>
+    <div className="row justify-content-center animate-fade-in" style={{ marginTop: '5vh' }}>
       <div className="col-md-5 col-lg-4">
+        <button
+          type="button"
+          className="btn btn-link text-decoration-none text-secondary d-inline-flex align-items-center gap-1 mb-3 p-0"
+          onClick={() => {
+            setSelectedRole(null);
+            setError('');
+          }}
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          <ArrowLeft size={16} /> Back to roles
+        </button>
+
         <div className="text-center mb-4">
           <div style={{
             width: 64, height: 64, borderRadius: 16,
             background: isLocked
               ? 'linear-gradient(135deg, #f59e0b, #ef4444)'
-              : 'linear-gradient(135deg, var(--bs-primary), var(--bs-secondary))',
+              : branding.gradient,
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16,
             transition: 'background 0.4s'
           }}>
-            {isLocked ? <ShieldOff size={28} color="white" /> : <LogIn size={28} color="white" />}
+            {isLocked ? <ShieldOff size={28} color="white" /> : <RoleIcon size={28} color="white" />}
           </div>
           <h2 className="fw-bold" style={{ color: 'var(--text-primary)' }}>Welcome Back</h2>
-          <p style={{ color: 'var(--text-secondary)' }}>Sign in to Special Kids Therapy Center</p>
+          <p style={{ color: 'var(--text-secondary)' }}>Sign in as {branding.title}</p>
         </div>
 
         <div className="card shadow-sm border-0" style={{ borderRadius: 'var(--radius-lg)' }}>
