@@ -153,16 +153,7 @@ const Register = () => {
                 </div>
               </div>
 
-              <div className="mb-4">
-                <label className="form-label small fw-semibold">Register As</label>
-                <select
-                  className="form-select py-2"
-                  value={formData.role}
-                  onChange={e => setFormData({ ...formData, role: e.target.value })}
-                >
-                  <option value="Guardian">Guardian / Parent</option>
-                </select>
-              </div>
+
 
               <button
                 type="submit"
