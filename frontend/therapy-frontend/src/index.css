@@ -254,11 +254,22 @@ html, body {
 
 /* ─── Navbar ─── */
 .navbar {
-  background: var(--navbar-bg) !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: transparent !important;
   border-bottom: 1px solid var(--navbar-border);
   box-shadow: var(--navbar-shadow);
+}
+.navbar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--navbar-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: -1;
+  pointer-events: none;
 }
 .navbar .navbar-brand,
 .navbar .nav-link,
