@@ -246,8 +246,8 @@ const Navbar = () => {
                 <div className="position-relative" ref={userMenuRef}>
                   <button
                     id="user-menu-btn"
-                    className="btn btn-sm d-flex align-items-center gap-2 px-3 rounded-pill"
-                    style={{ background: 'var(--navbar-btn-bg)', color: 'var(--navbar-text)', border: '1px solid var(--navbar-btn-border)', fontWeight: 500, fontSize: '0.85rem', letterSpacing: '0.01em' }}
+                    className="btn btn-sm d-flex align-items-center gap-2 px-3 rounded-pill navbar-btn"
+                    style={{ fontWeight: 500, fontSize: '0.85rem', letterSpacing: '0.01em' }}
                     onClick={() => setMenuOpen(o => !o)}
                     aria-expanded={menuOpen}
                     aria-haspopup="true"
@@ -340,7 +340,7 @@ const Navbar = () => {
               </div>
             ) : (
               <div className="d-flex align-items-center gap-2">
-                <Link to="/login" className="btn btn-sm rounded-pill px-3" style={{ background: 'var(--navbar-btn-bg)', color: 'var(--navbar-text)', border: '1px solid var(--navbar-btn-border)' }}>
+                <Link to="/login" className="btn btn-sm rounded-pill px-3 navbar-btn">
                   Login
                 </Link>
                 <Link

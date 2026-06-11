@@ -162,10 +162,9 @@ const NotificationBell = () => {
   return (
     <div className="position-relative" ref={bellRef}>
       <button
-        className="btn btn-sm d-flex align-items-center justify-content-center"
+        className="btn btn-sm d-flex align-items-center justify-content-center navbar-btn"
         style={{
-          background: 'var(--navbar-btn-bg)', border: '1px solid var(--navbar-btn-border)',
-          borderRadius: 10, width: 36, height: 36, color: 'var(--navbar-text)', position: 'relative',
+          borderRadius: 10, width: 36, height: 36, position: 'relative',
           padding: 0
         }}
         onClick={handleToggle}

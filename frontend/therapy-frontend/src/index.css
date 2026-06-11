@@ -51,11 +51,13 @@
   --input-group-bg:   #F1F5F9;
 
   /* Navbar */
-  --navbar-bg:         rgba(255, 255, 255, 0.45);
+  --navbar-bg:         rgba(255, 255, 255, 0.65);
   --navbar-text:       #0F172A;
-  --navbar-border:     rgba(15, 23, 42, 0.08);
-  --navbar-btn-bg:     rgba(15, 23, 42, 0.06);
-  --navbar-btn-border: rgba(15, 23, 42, 0.1);
+  --navbar-border:     rgba(15, 23, 42, 0.12);
+  --navbar-btn-bg:     rgba(255, 255, 255, 0.45);
+  --navbar-btn-hover-bg: rgba(255, 255, 255, 0.75);
+  --navbar-btn-border: rgba(15, 23, 42, 0.12);
+  --navbar-shadow:     0 8px 32px 0 rgba(31, 38, 135, 0.06);
 
   /* Modal */
   --modal-bg:         #FFFFFF;
@@ -141,11 +143,13 @@
   --input-group-bg:   #0F172A;
 
   /* Navbar */
-  --navbar-bg:         rgba(15, 23, 42, 0.45);
+  --navbar-bg:         rgba(15, 23, 42, 0.65);
   --navbar-text:       #F8FAFC;
-  --navbar-border:     rgba(255, 255, 255, 0.08);
-  --navbar-btn-bg:     rgba(255, 255, 255, 0.1);
+  --navbar-border:     rgba(255, 255, 255, 0.12);
+  --navbar-btn-bg:     rgba(255, 255, 255, 0.08);
+  --navbar-btn-hover-bg: rgba(255, 255, 255, 0.16);
   --navbar-btn-border: rgba(255, 255, 255, 0.15);
+  --navbar-shadow:     0 8px 32px 0 rgba(0, 0, 0, 0.37);
 
   /* Modal */
   --modal-bg:         #1E293B;
@@ -254,7 +258,7 @@ html, body {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--navbar-border);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--navbar-shadow);
 }
 .navbar .navbar-brand,
 .navbar .nav-link,
@@ -280,11 +284,23 @@ html, body {
   white-space: nowrap;
 }
 .theme-toggle-btn:hover {
-  background: rgba(255,255,255,0.25);
-  transform: scale(1.04);
+  background: var(--navbar-btn-hover-bg);
+  transform: scale(1.02);
 }
 .theme-toggle-btn svg {
   transition: transform 0.4s ease, opacity 0.3s ease;
+}
+
+/* ─── Unified Navbar Glassmorphic Button ─── */
+.navbar-btn {
+  background: var(--navbar-btn-bg) !important;
+  border: 1px solid var(--navbar-btn-border) !important;
+  color: var(--navbar-text) !important;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease !important;
+}
+.navbar-btn:hover {
+  background: var(--navbar-btn-hover-bg) !important;
+  transform: scale(1.02);
 }
 
 /* ─── Buttons ─── */
