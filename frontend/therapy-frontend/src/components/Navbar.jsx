@@ -202,7 +202,7 @@ const Navbar = () => {
         <div className="container">
           {/* Brand */}
           <Link className="navbar-brand fw-bold d-flex align-items-center gap-2" to="/">
-            <Heart size={22} fill="white" />
+            <Heart size={22} fill="currentColor" />
             <span>Special Kids Therapy Center</span>
           </Link>
 
@@ -230,12 +230,12 @@ const Navbar = () => {
             {/* Auth section */}
             {auth.token ? (
               <div className="d-flex align-items-center gap-2 gap-md-3 position-relative">
-                <span className="text-white small fw-medium d-none d-md-inline">
+                <span className="small fw-medium d-none d-md-inline" style={{ color: 'var(--navbar-text)' }}>
                   {getGreeting(auth.firstName, auth.role)}
                 </span>
                 <span
                   className="badge rounded-pill px-3 py-2"
-                  style={{ background: 'rgba(255,255,255,0.2)', color: 'white' }}
+                  style={{ background: 'var(--navbar-btn-bg)', color: 'var(--navbar-text)', border: '1px solid var(--navbar-btn-border)' }}
                 >
                   {auth.role}
                 </span>
@@ -247,7 +247,7 @@ const Navbar = () => {
                   <button
                     id="user-menu-btn"
                     className="btn btn-sm d-flex align-items-center gap-2 px-3 rounded-pill"
-                    style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.25)', fontWeight: 500, fontSize: '0.85rem', letterSpacing: '0.01em' }}
+                    style={{ background: 'var(--navbar-btn-bg)', color: 'var(--navbar-text)', border: '1px solid var(--navbar-btn-border)', fontWeight: 500, fontSize: '0.85rem', letterSpacing: '0.01em' }}
                     onClick={() => setMenuOpen(o => !o)}
                     aria-expanded={menuOpen}
                     aria-haspopup="true"
@@ -340,13 +340,13 @@ const Navbar = () => {
               </div>
             ) : (
               <div className="d-flex align-items-center gap-2">
-                <Link to="/login" className="btn btn-sm text-white border-white rounded-pill px-3">
+                <Link to="/login" className="btn btn-sm rounded-pill px-3" style={{ background: 'var(--navbar-btn-bg)', color: 'var(--navbar-text)', border: '1px solid var(--navbar-btn-border)' }}>
                   Login
                 </Link>
                 <Link
                   to="/register"
-                  className="btn btn-sm bg-white rounded-pill px-3 fw-bold"
-                  style={{ color: 'var(--bs-primary)' }}
+                  className="btn btn-sm rounded-pill px-3 fw-bold"
+                  style={{ background: 'var(--primary)', color: 'white' }}
                 >
                   Sign Up
                 </Link>

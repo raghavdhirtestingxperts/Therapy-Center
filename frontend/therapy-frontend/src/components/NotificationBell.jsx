@@ -164,8 +164,8 @@ const NotificationBell = () => {
       <button
         className="btn btn-sm d-flex align-items-center justify-content-center"
         style={{
-          background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)',
-          borderRadius: 10, width: 36, height: 36, color: 'white', position: 'relative',
+          background: 'var(--navbar-btn-bg)', border: '1px solid var(--navbar-btn-border)',
+          borderRadius: 10, width: 36, height: 36, color: 'var(--navbar-text)', position: 'relative',
           padding: 0
         }}
         onClick={handleToggle}
