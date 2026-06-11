@@ -257,6 +257,7 @@ html, body {
   background: transparent !important;
   border-bottom: 1px solid var(--navbar-border);
   box-shadow: var(--navbar-shadow);
+  isolation: isolate;
 }
 .navbar::before {
   content: "";
