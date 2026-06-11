@@ -267,8 +267,8 @@ html, body {
   right: 0;
   bottom: 0;
   background: var(--navbar-bg);
-  backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
   z-index: -1;
   pointer-events: none;
 }
@@ -818,8 +818,8 @@ footer.theme-footer {
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
   animation: seOverlayIn 0.3s ease;
 }
 @keyframes seOverlayIn {
