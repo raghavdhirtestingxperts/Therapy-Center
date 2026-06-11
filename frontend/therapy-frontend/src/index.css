@@ -242,9 +242,11 @@ html, body {
 
 /* ─── Navbar ─── */
 .navbar {
-  background: linear-gradient(135deg, var(--bs-primary), var(--bs-secondary)) !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  backdrop-filter: blur(12px);
+  background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), 0.7), rgba(var(--bs-secondary-rgb), 0.7)) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.08);
 }
 .navbar .navbar-brand,
 .navbar .nav-link,
