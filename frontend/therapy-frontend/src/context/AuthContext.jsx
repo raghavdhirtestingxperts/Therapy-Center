@@ -44,6 +44,7 @@ export function AuthProvider({ children }) {
     userId: localStorage.getItem('userId'),
     firstName: localStorage.getItem('firstName'),
     lastName: localStorage.getItem('lastName'),
+    profilePicture: localStorage.getItem('profilePicture'),
   }));
 
   // Whether the "Session Expired" modal is visible
@@ -60,7 +61,8 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('userId');
     localStorage.removeItem('firstName');
     localStorage.removeItem('lastName');
-    setAuth({ token: null, role: null, userId: null, firstName: null, lastName: null });
+    localStorage.removeItem('profilePicture');
+    setAuth({ token: null, role: null, userId: null, firstName: null, lastName: null, profilePicture: null });
     setSessionExpired(false);
   }, []);
 
@@ -72,7 +74,8 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('userId');
     localStorage.removeItem('firstName');
     localStorage.removeItem('lastName');
-    setAuth({ token: null, role: null, userId: null, firstName: null, lastName: null });
+    localStorage.removeItem('profilePicture');
+    setAuth({ token: null, role: null, userId: null, firstName: null, lastName: null, profilePicture: null });
     setSessionExpired(true);
   }, []);
 
@@ -111,15 +114,30 @@ export function AuthProvider({ children }) {
     localStorage.setItem('userId', String(data.userId));
     localStorage.setItem('firstName', data.firstName || '');
     localStorage.setItem('lastName', data.lastName || '');
+    localStorage.setItem('profilePicture', data.profilePicture || '');
     setAuth({
       token: data.token,
       role: data.role,
       userId: String(data.userId),
       firstName: data.firstName || '',
       lastName: data.lastName || '',
+      profilePicture: data.profilePicture || '',
     });
     setSessionExpired(false);
   };
+
+  // ── Update Profile Picture Reactive Helper ──────────────────────────────────
+  const updateProfilePicture = useCallback((profilePicture) => {
+    if (profilePicture) {
+      localStorage.setItem('profilePicture', profilePicture);
+    } else {
+      localStorage.removeItem('profilePicture');
+    }
+    setAuth(prev => ({
+      ...prev,
+      profilePicture: profilePicture || '',
+    }));
+  }, []);
 
   // ── Auto-fetch profile if token exists but name is missing ───────────────────
   useEffect(() => {
@@ -128,13 +146,15 @@ export function AuthProvider({ children }) {
         headers: { Authorization: `Bearer ${auth.token}` }
       })
       .then(res => {
-        const { firstName, lastName } = res.data;
+        const { firstName, lastName, profilePicture } = res.data;
         localStorage.setItem('firstName', firstName || '');
         localStorage.setItem('lastName', lastName || '');
+        localStorage.setItem('profilePicture', profilePicture || '');
         setAuth(prev => ({
           ...prev,
           firstName: firstName || '',
           lastName: lastName || '',
+          profilePicture: profilePicture || '',
         }));
       })
       .catch(err => {
@@ -171,7 +191,7 @@ export function AuthProvider({ children }) {
   }, [expireSession]);
 
   return (
-    <AuthContext.Provider value={{ auth, login, logout, expireSession }}>
+    <AuthContext.Provider value={{ auth, login, logout, expireSession, updateProfilePicture }}>
       {children}
       {sessionExpired && <SessionExpiredModal onDismiss={() => setSessionExpired(false)} />}
     </AuthContext.Provider>

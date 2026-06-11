@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogOut, Heart, Sun, Moon, Key, History, ChevronDown, CheckCircle, XCircle, Eye, EyeOff, Lock } from 'lucide-react';
+import { LogOut, Heart, Sun, Moon, Key, History, ChevronDown, CheckCircle, XCircle, Eye, EyeOff, Lock, User } from 'lucide-react';
 import { useAuth, getGreeting } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
@@ -9,7 +9,7 @@ import NotificationBell from './NotificationBell';
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const { auth, logout } = useAuth();
+  const { auth, logout, updateProfilePicture } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { addToast } = useToast();
   const userMenuRef = useRef(null);
@@ -41,6 +41,82 @@ const Navbar = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+
+  // Profile Settings modal state
+  const [showProfileSettings, setShowProfileSettings] = useState(false);
+  const [profileError, setProfileError] = useState('');
+  const [profileSuccess, setProfileSuccess] = useState('');
+  const [profileLoading, setProfileLoading] = useState(false);
+
+  const openProfileSettings = () => {
+    setMenuOpen(false);
+    setProfileError('');
+    setProfileSuccess('');
+    setShowProfileSettings(true);
+  };
+
+  const closeProfileSettings = () => {
+    setShowProfileSettings(false);
+  };
+
+  const handleProfilePicUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setProfileError('Please upload an image file.');
+      return;
+    }
+
+    if (file.size > 500 * 1024) {
+      setProfileError('Image size must be less than 500KB.');
+      return;
+    }
+
+    setProfileLoading(true);
+    setProfileError('');
+    setProfileSuccess('');
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onloadend = async () => {
+      const base64data = reader.result;
+      try {
+        await api.post('/auth/profile/picture', {
+          profilePicture: base64data
+        });
+        updateProfilePicture(base64data);
+        setProfileSuccess('Profile picture updated successfully!');
+        addToast('Profile picture updated successfully!', 'success');
+      } catch (err) {
+        const msg = err.response?.data?.message || err.response?.data || 'Failed to update profile picture.';
+        setProfileError(msg);
+        addToast(msg, 'error');
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+  };
+
+  const handleRemoveProfilePic = async () => {
+    setProfileLoading(true);
+    setProfileError('');
+    setProfileSuccess('');
+    try {
+      await api.post('/auth/profile/picture', {
+        profilePicture: null
+      });
+      updateProfilePicture(null);
+      setProfileSuccess('Profile picture removed successfully!');
+      addToast('Profile picture removed successfully!', 'success');
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data || 'Failed to remove profile picture.';
+      setProfileError(msg);
+      addToast(msg, 'error');
+    } finally {
+      setProfileLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     setMenuOpen(false);
@@ -176,6 +252,31 @@ const Navbar = () => {
                     aria-expanded={menuOpen}
                     aria-haspopup="true"
                   >
+                    {auth.profilePicture ? (
+                      <img
+                        src={auth.profilePicture}
+                        alt="Avatar"
+                        style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: 20,
+                          height: 20,
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.68rem',
+                          fontWeight: 'bold',
+                          color: 'white',
+                          textShadow: '0 1px 1px rgba(0,0,0,0.1)'
+                        }}
+                      >
+                        {(auth.firstName || auth.role || 'U')[0].toUpperCase()}
+                      </div>
+                    )}
                     <span className="d-none d-sm-inline">Settings</span>
                     <ChevronDown size={13} style={{ transition: 'transform 0.2s', transform: menuOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
                   </button>
@@ -192,6 +293,16 @@ const Navbar = () => {
                         color: 'var(--text-primary)'
                       }}
                     >
+                      <button
+                        id="profile-settings-btn"
+                        className="d-flex align-items-center gap-2 px-4 py-3"
+                        style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', width: '100%', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500, transition: 'background 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--primary-glow)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                        onClick={openProfileSettings}
+                      >
+                        <User size={15} color="var(--primary)" /> Profile Settings
+                      </button>
                       <button
                         id="change-password-btn"
                         className="d-flex align-items-center gap-2 px-4 py-3"
@@ -434,6 +545,116 @@ const Navbar = () => {
                     ))}
                   </div>
                 )}
+              </div>
+            </div>
+        </div>
+      )}
+
+      {/* ── Profile Settings Modal ────────────────────────────────────────────── */}
+      {showProfileSettings && (
+        <div
+          className="modal fade show d-block"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}
+          onClick={e => { if (e.target === e.currentTarget) closeProfileSettings(); }}
+        >
+          <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: 420 }}>
+            <div className="modal-content border-0 shadow-lg" style={{ borderRadius: 16 }}>
+              <div className="modal-header border-0 pb-0 px-4 pt-4">
+                <div className="d-flex align-items-center gap-2">
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#14b8a6,#6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <User size={18} color="white" />
+                  </div>
+                  <h5 className="modal-title fw-bold mb-0">Profile Settings</h5>
+                </div>
+                <button type="button" className="btn-close" onClick={closeProfileSettings} />
+              </div>
+
+              <div className="modal-body px-4 pt-3 pb-4 text-center">
+                {profileError && (
+                  <div className="alert alert-danger rounded-3 small py-2 d-flex align-items-center gap-2 mb-3">
+                    <XCircle size={16} /> {profileError}
+                  </div>
+                )}
+                {profileSuccess && (
+                  <div className="alert alert-success rounded-3 small py-2 d-flex align-items-center gap-2 mb-3">
+                    <CheckCircle size={16} /> {profileSuccess}
+                  </div>
+                )}
+
+                {/* Avatar Preview */}
+                <div className="d-flex flex-column align-items-center mb-4">
+                  <div className="position-relative mb-3">
+                    {auth.profilePicture ? (
+                      <img
+                        src={auth.profilePicture}
+                        alt="Profile Preview"
+                        style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--primary)' }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: 96,
+                          height: 96,
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '2.5rem',
+                          fontWeight: 'bold',
+                          color: 'white',
+                          border: '3px solid var(--primary)',
+                          textShadow: '0 2px 4px rgba(0,0,0,0.15)'
+                        }}
+                      >
+                        {(auth.firstName || auth.role || 'U')[0].toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Upload Actions */}
+                  <div className="d-flex gap-2 justify-content-center">
+                    <label className="btn btn-sm btn-primary rounded-pill px-3 py-2" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {profileLoading && <span className="spinner-border spinner-border-sm" />}
+                      {profileLoading ? 'Uploading...' : 'Upload Photo'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleProfilePicUpload}
+                        style={{ display: 'none' }}
+                        disabled={profileLoading}
+                      />
+                    </label>
+                    {auth.profilePicture && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-danger rounded-pill px-3 py-2"
+                        onClick={handleRemoveProfilePic}
+                        disabled={profileLoading}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* User Details Read-only */}
+                <div className="text-start p-3 rounded-3" style={{ background: 'var(--surface-variant, rgba(0,0,0,0.02))', border: '1px solid var(--border)' }}>
+                  <div className="mb-2">
+                    <label className="small text-muted mb-0">Name</label>
+                    <div className="fw-semibold">{auth.firstName} {auth.lastName || ''}</div>
+                  </div>
+                  <div className="mb-2">
+                    <label className="small text-muted mb-0">Role</label>
+                    <div><span className="badge bg-secondary-subtle text-secondary rounded-pill">{auth.role}</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-footer border-0 px-4 pb-4 pt-0">
+                <button type="button" className="btn btn-light rounded-3 px-4 w-100" onClick={closeProfileSettings}>
+                  Close
+                </button>
               </div>
             </div>
           </div>

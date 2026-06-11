@@ -15,4 +15,6 @@ public class User
     // ─── Account Lockout ───
     public int FailedLoginAttempts { get; set; } = 0;
     public DateTime? LockoutUntil { get; set; }
+
+    public string? ProfilePicture { get; set; }
 }

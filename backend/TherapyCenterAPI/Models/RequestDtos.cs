@@ -167,3 +167,8 @@ public class RazorpayVerifyRequest
     [Required]
     public string RazorpaySignature { get; set; } = string.Empty;
 }
+
+public class UpdateProfilePictureRequest
+{
+    public string? ProfilePicture { get; set; }
+}

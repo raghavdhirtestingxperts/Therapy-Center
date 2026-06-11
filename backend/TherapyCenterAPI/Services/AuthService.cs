@@ -116,7 +116,7 @@ public class AuthService : IAuthService
         });
 
         var token = GenerateJwtToken(user);
-        return (true, new { token, role = user.Role, userId = user.UserId, firstName = user.FirstName, lastName = user.LastName }, 200);
+        return (true, new { token, role = user.Role, userId = user.UserId, firstName = user.FirstName, lastName = user.LastName, profilePicture = user.ProfilePicture }, 200);
     }
 
     public async Task<(bool Success, string Message)> ChangePasswordAsync(int userId, ChangePasswordRequest request)

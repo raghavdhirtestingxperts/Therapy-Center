@@ -48,7 +48,26 @@ public class AuthController : ControllerBase
         if (user == null || !user.IsActive)
             return NotFound("User not found or inactive.");
 
-        return Ok(new { userId = user.UserId, firstName = user.FirstName, lastName = user.LastName, role = user.Role });
+        return Ok(new { userId = user.UserId, firstName = user.FirstName, lastName = user.LastName, role = user.Role, profilePicture = user.ProfilePicture });
+    }
+
+    // POST /api/auth/profile/picture
+    [Authorize]
+    [HttpPost("profile/picture")]
+    public async Task<IActionResult> UpdateProfilePicture([FromBody] UpdateProfilePictureRequest request)
+    {
+        var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
+            return Unauthorized("Invalid token.");
+
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null || !user.IsActive)
+            return NotFound("User not found.");
+
+        user.ProfilePicture = request.ProfilePicture;
+        await _userRepository.UpdateAsync(user);
+
+        return Ok(new { message = "Profile picture updated successfully.", profilePicture = user.ProfilePicture });
     }
 
     // POST /api/auth/register
